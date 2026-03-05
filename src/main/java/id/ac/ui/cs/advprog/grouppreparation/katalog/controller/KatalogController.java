@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/katalog")
-@CrossOrigin(origins = "*") // Penting banget biar Next.js bisa nge-fetch tanpa error CORS
+@CrossOrigin(origins = "*")
 public class KatalogController {
 
     private final KatalogService katalogService;
@@ -18,6 +18,12 @@ public class KatalogController {
     @Autowired
     public KatalogController(KatalogService katalogService) {
         this.katalogService = katalogService;
+    }
+
+    @PostMapping
+    public ResponseEntity<Katalog> createListing(@RequestBody Katalog katalog) {
+        Katalog newKatalog = katalogService.createListing(katalog);
+        return ResponseEntity.ok(newKatalog);
     }
 
     @GetMapping

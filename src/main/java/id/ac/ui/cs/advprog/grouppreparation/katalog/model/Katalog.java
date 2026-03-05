@@ -1,13 +1,12 @@
 package id.ac.ui.cs.advprog.grouppreparation.katalog.model;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Column;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "katalog")
+@Getter
+@Setter
 public class Katalog {
 
     @Id
@@ -20,28 +19,26 @@ public class Katalog {
     @Column(columnDefinition = "TEXT")
     private String deskripsi;
 
+    private String gambar;
+
+    private String kategori;
+
     @Column(nullable = false)
     private Double hargaAwal;
 
-    // Default constructor (wajib buat JPA)
+    private Double hargaCadangan;
+
+    private Integer durasiLelang;
+
     public Katalog() {}
 
-    public Katalog(String judul, String deskripsi, Double hargaAwal) {
+    public Katalog(String judul, String deskripsi, String gambar, String kategori, Double hargaAwal, Double hargaCadangan, Integer durasiLelang) {
         this.judul = judul;
         this.deskripsi = deskripsi;
+        this.gambar = gambar;
+        this.kategori = kategori;
         this.hargaAwal = hargaAwal;
+        this.hargaCadangan = hargaCadangan;
+        this.durasiLelang = durasiLelang;
     }
-
-    // --- GETTERS & SETTERS ---
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getJudul() { return judul; }
-    public void setJudul(String judul) { this.judul = judul; }
-
-    public String getDeskripsi() { return deskripsi; }
-    public void setDeskripsi(String deskripsi) { this.deskripsi = deskripsi; }
-
-    public Double getHargaAwal() { return hargaAwal; }
-    public void setHargaAwal(Double hargaAwal) { this.hargaAwal = hargaAwal; }
 }
