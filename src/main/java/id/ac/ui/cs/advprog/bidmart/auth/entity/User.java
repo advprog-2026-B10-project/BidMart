@@ -1,22 +1,23 @@
 package id.ac.ui.cs.advprog.bidmart.auth.entity;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Collection;
+import java.util.List;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.Table;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "users")
-public class User {
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class User implements UserDetails {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,23 +26,52 @@ public class User {
     private String email; 
 
     @Column(nullable = false)
-    private String password; // Hashed 
+    private String password; 
 
-    private String displayName; 
-    private String photoUrl; 
-    private String shippingAddress; 
+    private String displayName;
+    
+    @Builder.Default
+    private boolean isEnabled = false; 
 
-    private boolean isEnabled = true; // For admin deactivation 
+    @Column(name = "mfa_enabled", nullable = false)
+    @Builder.Default
+    private boolean mfaEnabled = false;
 
-    // 2FA Fields
-    private boolean mfaEnabled = false; 
-    private String mfaSecret; // For TOTP 
+    private String phoneNumber;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> roles = new HashSet<>();
+    private String provider; 
+
+    @Builder.Default
+    private boolean mfaSecretSet = false;
+
+    @Column(name = "verification_token")
+    private String verificationToken;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+
+    @Override
+    public String getPassword() {
+        return this.password; 
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email; 
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return this.isEnabled; 
+    }
+
+    @Override public boolean isAccountNonExpired() { return true; }
+    @Override public boolean isAccountNonLocked() { return true; }
+    @Override public boolean isCredentialsNonExpired() { return true; }
 }
