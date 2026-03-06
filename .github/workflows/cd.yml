@@ -46,4 +46,5 @@ jobs:
             cd /home/ubuntu/bidmart
             pkill -f 'java -jar' || true
             rm -f *-plain.jar
-            nohup sh -c 'java -jar *.jar > app.log 2>&1' < /dev/null > /dev/null 2>&1 &
+            # Run the application in a new session to prevent it from being killed when the SSH connection closes.
+            setsid nohup java -jar *.jar > app.log 2>&1 < /dev/null &
