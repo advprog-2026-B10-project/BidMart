@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.bidding.entity;
+package id.ac.ui.cs.advprog.bidmart.bidding.entity;
 
 public enum AuctionStatus {
     DRAFT,

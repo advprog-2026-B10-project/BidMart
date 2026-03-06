@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.bidding.dto;
+package id.ac.ui.cs.advprog.bidmart.bidding.dto;
 
 import lombok.Getter;
 import lombok.Setter;

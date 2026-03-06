@@ -1,13 +1,11 @@
 package id.ac.ui.cs.advprog.bidmart.bidding.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "auctions")
@@ -20,7 +18,22 @@ public class Auction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String title;
+    @Column(nullable = false)
+    private Long listingId;
 
+    @Column(nullable = false)
+    private Double reservePrice;
+
+    @Column(nullable = false)
+    private LocalDateTime endTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AuctionStatus status;
+
+    @OneToMany(mappedBy = "auction", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Bid> bids;
+
+    @Column(nullable = false)
     private Double startingPrice;
 }
