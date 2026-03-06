@@ -44,8 +44,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/bidmart
-            # Matikan aplikasi yang lama (kalau ada)
             pkill -f 'java -jar' || true
-            # Jalankan aplikasi yang baru di background
-            nohup java -jar *.jar > app.log 2>&1 &
-            echo "Deployment sukses, aplikasi berjalan di port 8080!"
+            nohup java -jar *.jar > app.log 2>&1 < /dev/null &
+            exit 0
