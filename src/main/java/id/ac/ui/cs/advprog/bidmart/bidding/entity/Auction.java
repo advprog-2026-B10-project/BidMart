@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.grouppreparation.bidding.model;
+package id.ac.ui.cs.advprog.bidmart.bidding.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
