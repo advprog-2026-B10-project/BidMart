@@ -1,1 +1,1 @@
-rootProject.name = "group-preparation"
+rootProject.name = "bidmart"
