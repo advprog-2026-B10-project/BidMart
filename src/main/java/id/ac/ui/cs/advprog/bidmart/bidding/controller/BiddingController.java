@@ -1,7 +1,8 @@
-package id.ac.ui.cs.advprog.grouppreparation.bidding.controller;
+package id.ac.ui.cs.advprog.bidmart.bidding.controller;
 
-import id.ac.ui.cs.advprog.grouppreparation.bidding.model.Auction;
-import id.ac.ui.cs.advprog.grouppreparation.bidding.service.BiddingService;
+import id.ac.ui.cs.advprog.bidmart.bidding.entity.Auction;
+import id.ac.ui.cs.advprog.bidmart.bidding.service.BiddingService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
