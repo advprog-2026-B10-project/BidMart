@@ -26,8 +26,11 @@ export default function LoginPage() {
       localStorage.setItem('email', response.data.email);
       localStorage.setItem('role', response.data.role);
       router.push('/');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid credentials or account not verified.');
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? (err.response?.data as { message?: string } | undefined)?.message || 'Invalid credentials or account not verified.'
+        : 'Invalid credentials or account not verified.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -83,7 +86,7 @@ export default function LoginPage() {
 
         <div className="mt-8 text-center text-sm">
           <p className="text-gray-400">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/register" className="text-blue-500 hover:text-blue-400 font-medium transition">
               Register here
             </Link>

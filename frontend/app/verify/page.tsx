@@ -8,21 +8,22 @@ function VerifyContent() {
   const urlToken = searchParams.get('token'); // Grab token from ?token=...
   const [status, setStatus] = useState('Checking token...');
 
-  useEffect(() => {
-    if (urlToken) {
-      handleAutoVerify(urlToken);
-    }
-  }, [urlToken]);
-
   const handleAutoVerify = async (token: string) => {
     try {
       await axios.get(`http://localhost:8080/api/auth/verify?token=${token}`);
       setStatus('Account verified! Redirecting to login...');
       setTimeout(() => window.location.href = '/login', 3000);
-    } catch (err) {
+    } catch {
       setStatus('Verification failed. The token may be invalid.');
     }
   };
+
+  useEffect(() => {
+    if (urlToken) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      handleAutoVerify(urlToken);
+    }
+  }, [urlToken]);
 
   return (
     <div className="text-white text-center">

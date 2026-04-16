@@ -14,33 +14,20 @@ interface User {
 
 export default function HomePage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null); // Track role
+  const [currentUser] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('email');
+  });
+  const [userRole] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('role');
+  }); // Track role
   const router = useRouter();
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
-    const email = localStorage.getItem('email');
-
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
-    setCurrentUser(email);
-    setUserRole(role);
-
-    // Only attempt to fetch the user list if the user is an ADMIN
-    if (role === 'ADMIN') {
-      fetchUsers(token);
-    }
-  }, [router]);
 
   const fetchUsers = async (token: string) => {
     try {
       const response = await axios.get('http://localhost:8080/api/auth/users', {
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
@@ -50,6 +37,22 @@ export default function HomePage() {
       console.error("Axios Error Details:", err);
     }
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    // Only attempt to fetch the user list if the user is an ADMIN
+    if (role === 'ADMIN') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchUsers(token);
+    }
+  }, [router]);
 
   const getRoleBadgeStyle = (role: string) => {
     switch (role?.toUpperCase()) {
@@ -85,6 +88,15 @@ export default function HomePage() {
           <button onClick={handleLogout} className="px-6 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-all shadow-lg hover:shadow-red-900/20">
             Logout
           </button>
+        </div>
+
+        <div className="mb-8 flex justify-end">
+          <Link
+            href="/profile"
+            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-semibold transition-all shadow-lg hover:shadow-indigo-900/20"
+          >
+            Manage Profile
+          </Link>
         </div>
 
         {/* Conditional Rendering based on Role */}
