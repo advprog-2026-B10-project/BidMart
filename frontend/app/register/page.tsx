@@ -12,15 +12,21 @@ export default function RegisterPage() {
     try {
       await axios.post('http://localhost:8080/api/auth/register', formData);
       setStatus({ type: 'success', message: 'Registration successful! Check your DB for the token.' });
-    } catch (err: any) {
-        if (err.response?.status === 400 && typeof err.response.data === 'object') {
-            // Collect all validation messages
-            const messages = Object.values(err.response.data).join(', ');
-            setStatus({ type: 'error', message: messages });
-        } else {
-            setStatus({ type: 'error', message: 'Registration failed.' });
-        }
-        }
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.status === 400 && typeof err.response.data === 'object') {
+        const details = (err.response.data as { details?: Record<string, string>; message?: string })?.details;
+        const detailMessages = details && typeof details === 'object' ? Object.values(details).join(', ') : '';
+        setStatus({
+          type: 'error',
+          message: detailMessages || (err.response.data as { message?: string })?.message || 'Registration failed.',
+        });
+      } else {
+        const fallbackMessage = axios.isAxiosError(err)
+          ? (err.response?.data as { message?: string } | undefined)?.message || 'Registration failed.'
+          : 'Registration failed.';
+        setStatus({ type: 'error', message: fallbackMessage });
+      }
+    }
   };
 
   return (

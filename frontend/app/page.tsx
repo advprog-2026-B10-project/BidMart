@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import { logout } from '@/lib/authUtils';
+import axiosClient from '@/lib/axiosClient';
 import Link from 'next/link';
 
 interface User {
@@ -14,42 +15,42 @@ interface User {
 
 export default function HomePage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null); // Track role
   const router = useRouter();
+
+  const currentUser = useSyncExternalStore(
+    () => () => {},
+    () => localStorage.getItem('email'),
+    () => null
+  );
+
+  const userRole = useSyncExternalStore(
+    () => () => {},
+    () => localStorage.getItem('role'),
+    () => null
+  );
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const response = await axiosClient.get('/auth/users');
+      setUsers(response.data);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+    }
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
-    const email = localStorage.getItem('email');
-
     if (!token) {
       router.push('/login');
-      return;
-    }
-
-    setCurrentUser(email);
-    setUserRole(role);
-
-    // Only attempt to fetch the user list if the user is an ADMIN
-    if (role === 'ADMIN') {
-      fetchUsers(token);
     }
   }, [router]);
 
-  const fetchUsers = async (token: string) => {
-    try {
-      const response = await axios.get('http://localhost:8080/api/auth/users', {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      setUsers(response.data);
-    } catch (err) {
-      console.error("Axios Error Details:", err);
+  useEffect(() => {
+    if (userRole === 'ADMIN') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchUsers();
     }
-  };
+  }, [userRole, fetchUsers]);
 
   const getRoleBadgeStyle = (role: string) => {
     switch (role?.toUpperCase()) {
@@ -64,9 +65,8 @@ export default function HomePage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    router.push('/login');
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
@@ -85,6 +85,15 @@ export default function HomePage() {
           <button onClick={handleLogout} className="px-6 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-all shadow-lg hover:shadow-red-900/20">
             Logout
           </button>
+        </div>
+
+        <div className="mb-8 flex justify-end">
+          <Link
+            href="/profile"
+            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-semibold transition-all shadow-lg hover:shadow-indigo-900/20"
+          >
+            Manage Profile
+          </Link>
         </div>
 
         {/* Conditional Rendering based on Role */}
