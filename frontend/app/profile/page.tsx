@@ -22,6 +22,13 @@ interface ApiError {
   details?: Record<string, string>;
 }
 
+interface MfaStatusResponse {
+  mfaEnabled: boolean;
+  message?: string;
+  secret?: string | null;
+  otpauthUri?: string | null;
+}
+
 interface UiStatus {
   type: 'success' | 'error' | '';
   message: string;
@@ -34,6 +41,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [mfaToggling, setMfaToggling] = useState(false);
+  const [mfaSecret, setMfaSecret] = useState('');
+  const [mfaUri, setMfaUri] = useState('');
   const [status, setStatus] = useState<UiStatus>({
     type: '',
     message: '',
@@ -128,10 +137,13 @@ export default function ProfilePage() {
         enabled: !profile.mfaEnabled,
       });
 
-      setProfile((prev) => prev ? { ...prev, mfaEnabled: response.data.mfaEnabled } : prev);
+      const mfaResponse = response.data as MfaStatusResponse;
+      setProfile((prev) => prev ? { ...prev, mfaEnabled: mfaResponse.mfaEnabled } : prev);
+      setMfaSecret(mfaResponse.secret || '');
+      setMfaUri(mfaResponse.otpauthUri || '');
       setStatus({
         type: 'success',
-        message: response.data.message || 'MFA status updated successfully.',
+        message: mfaResponse.message || 'MFA status updated successfully.',
       });
     } catch (err: unknown) {
       const fallbackMessage = 'Failed to update MFA status.';
@@ -222,6 +234,22 @@ export default function ProfilePage() {
                     {mfaToggling ? 'Updating...' : profile.mfaEnabled ? 'Disable MFA' : 'Enable MFA'}
                   </button>
                 </div>
+                {profile.mfaEnabled && mfaSecret && mfaUri && (
+                  <div className="mt-4 space-y-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4 text-sm text-emerald-100">
+                    <p className="font-semibold">MFA enrollment data</p>
+                    <p className="text-emerald-200/90">
+                      Add the secret below into your authenticator app, or paste the otpauth URI into a compatible app.
+                    </p>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-emerald-300/80 mb-1">Secret</p>
+                      <code className="block break-all rounded bg-gray-950/70 p-2 text-xs text-emerald-100">{mfaSecret}</code>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-emerald-300/80 mb-1">otpauth URI</p>
+                      <code className="block break-all rounded bg-gray-950/70 p-2 text-xs text-emerald-100">{mfaUri}</code>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
