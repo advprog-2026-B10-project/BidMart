@@ -37,11 +37,11 @@ public class Catalog {
 
     public Catalog() {}
 
-    public Catalog(String judul, String deskripsi, String gambar, Category category, Double hargaAwal, Double hargaCadangan, Integer durasiLelang) {
+    public Catalog(String judul, String deskripsi, String gambar, Category kategori, Double hargaAwal, Double hargaCadangan, Integer durasiLelang) {
         this.judul = judul;
         this.deskripsi = deskripsi;
         this.gambar = gambar;
-        this.category = category;
+        this.kategori = kategori;
         this.hargaAwal = hargaAwal;
         this.hargaCadangan = hargaCadangan;
         this.durasiLelang = durasiLelang;
