@@ -12,29 +12,21 @@ interface User {
   role: string; 
 }
 
-interface AuthSnapshot {
-  email: string | null;
-  role: string | null;
-}
-
 export default function HomePage() {
   const [users, setUsers] = useState<User[]>([]);
   const router = useRouter();
 
-  const authSnapshot = useSyncExternalStore<AuthSnapshot>(
+  const currentUser = useSyncExternalStore(
     () => () => {},
-    () => ({
-      email: localStorage.getItem('email'),
-      role: localStorage.getItem('role'),
-    }),
-    () => ({
-      email: null,
-      role: null,
-    })
+    () => localStorage.getItem('email'),
+    () => null
   );
 
-  const currentUser = authSnapshot.email;
-  const userRole = authSnapshot.role;
+  const userRole = useSyncExternalStore(
+    () => () => {},
+    () => localStorage.getItem('role'),
+    () => null
+  );
 
   const fetchUsers = async (token: string) => {
     try {
