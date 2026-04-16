@@ -1,15 +1,16 @@
 package id.ac.ui.cs.advprog.bidmart.auth.controller;
 
 import id.ac.ui.cs.advprog.bidmart.auth.dto.AuthResponse;
+import id.ac.ui.cs.advprog.bidmart.auth.dto.AdminUserResponse;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.LoginRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.RegisterRequest;
-import id.ac.ui.cs.advprog.bidmart.auth.entity.User;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,7 +42,11 @@ public class AuthController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userRepository.findAll());
+    public ResponseEntity<List<AdminUserResponse>> getAllUsers() {
+        List<AdminUserResponse> users = userRepository.findAll()
+                .stream()
+                .map(AdminUserResponse::fromUser)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(users);
     }
 }
