@@ -62,12 +62,13 @@ class BiddingServiceTest {
         request.setReservePrice(100000.0);
         request.setDurationInMinutes(60);
 
-        when(auctionRepository.save(any(Auction.class))).thenReturn(activeAuction);
+        when(auctionRepository.save(any(Auction.class))).thenAnswer(i -> i.getArgument(0));
 
         Auction result = biddingService.createAuction(request);
 
         assertNotNull(result);
         assertEquals(AuctionStatus.DRAFT, result.getStatus());
+        assertEquals(100L, result.getListingId());
         verify(auctionRepository, times(1)).save(any(Auction.class));
     }
 
