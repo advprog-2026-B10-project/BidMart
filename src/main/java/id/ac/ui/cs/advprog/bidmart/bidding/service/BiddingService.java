@@ -9,9 +9,13 @@ import id.ac.ui.cs.advprog.bidmart.bidding.repository.BidRepository;
 import id.ac.ui.cs.advprog.bidmart.wallet.service.WalletService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class BiddingService {
@@ -94,17 +98,39 @@ public class BiddingService {
         return "Bid berhasil, saldo ditahan";
     }
 
-    public String winAuction(String userId, Double amount) {
+    public String determineWinner(Auction auction) {
 
-        walletService.deductHeldBalance(userId, amount);
+        Optional<Bid> highestBid = auction.getBids().stream()
+                .max(Comparator.comparingDouble(Bid::getAmount));
+
+        if (highestBid.isEmpty()) {
+            auction.setStatus(AuctionStatus.UNSOLD);
+            auctionRepository.save(auction);
+            return "Lelang berakhir tanpa pemenang";
+        }
+
+        if (highestBid.get().getAmount() >= auction.getReservePrice()) {
+            auction.setStatus(AuctionStatus.WON);
+            walletService.deductHeldBalance(highestBid.get().getBuyerId(), highestBid.get().getAmount());
+        } else {
+            auction.setStatus(AuctionStatus.UNSOLD);
+            walletService.releaseHeldBalance(highestBid.get().getBuyerId(), highestBid.get().getAmount());
+        }
+
+        auctionRepository.save(auction);
 
         return "User menang lelang, saldo dipotong";
     }
 
-    public String loseAuction(String userId, Double amount) {
+    @Scheduled(fixedRate = 60000)
+    public void closeExpiredAuctions() {
+        List<Auction> activeAuctions = auctionRepository.findByStatusIn(List.of(AuctionStatus.ACTIVE, AuctionStatus.EXTENDED));
 
-        walletService.releaseHeldBalance(userId, amount);
-
-        return "User kalah lelang, saldo dikembalikan";
+        for (Auction auction: activeAuctions) {
+            if (LocalDateTime.now().isAfter(auction.getEndTime())) {
+                auction.setStatus(AuctionStatus.CLOSED);
+                determineWinner(auction);
+            }
+        }
     }
 }
