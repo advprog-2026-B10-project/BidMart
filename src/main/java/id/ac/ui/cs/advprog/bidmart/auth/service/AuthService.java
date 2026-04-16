@@ -3,11 +3,13 @@ package id.ac.ui.cs.advprog.bidmart.auth.service;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.*;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.Role;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.User;
+import id.ac.ui.cs.advprog.bidmart.auth.exception.AuthException;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,16 +24,16 @@ public class AuthService {
 
     public void register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered");
+            throw new AuthException(HttpStatus.CONFLICT, "Email already registered");
         }
 
         Role assignedRole;
         try {
             assignedRole = Role.valueOf(request.getRole().toUpperCase());
             if (assignedRole == Role.ADMIN) {
-                throw new RuntimeException("Cannot register as Admin");
+                throw new AuthException(HttpStatus.BAD_REQUEST, "Cannot register as Admin");
             }
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             assignedRole = Role.BUYER; 
         }
 
@@ -54,14 +56,14 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
         if (!user.isEnabled()) {
-            throw new RuntimeException("Please verify your email first");
+            throw new AuthException(HttpStatus.FORBIDDEN, "Please verify your email first");
         }
 
         String token = jwtService.generateToken(user);
@@ -70,7 +72,7 @@ public class AuthService {
 
     public void verifyUser(String token) {
         User user = userRepository.findByVerificationToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid verification token"));
+                .orElseThrow(() -> new AuthException(HttpStatus.BAD_REQUEST, "Invalid verification token"));
         
         user.setEnabled(true);
         user.setVerificationToken(null); 
