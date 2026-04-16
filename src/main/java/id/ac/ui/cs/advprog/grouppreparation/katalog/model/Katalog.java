@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.grouppreparation.katalog.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,6 +25,7 @@ public class Katalog {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "kategori_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Kategori kategori;
 
     @Column(nullable = false)
