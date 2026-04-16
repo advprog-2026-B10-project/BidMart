@@ -22,7 +22,7 @@ public class Bid {
     private Auction auction;
 
     @Column(nullable = false)
-    private Long buyerId;
+    private String buyerId;
 
     @Column(nullable = false)
     private Double amount;
