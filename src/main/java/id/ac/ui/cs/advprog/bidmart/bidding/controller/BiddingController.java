@@ -42,7 +42,7 @@ public class BiddingController {
     }
 
     @GetMapping("/auctions/{id}")
-    public ResponseEntity<Auction> getAllAuctions(@PathVariable Long id) {
+    public ResponseEntity<Auction> getAuction(@PathVariable Long id) {
         return ResponseEntity.ok(auctionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Auction tidak ditemukan")));
     }
