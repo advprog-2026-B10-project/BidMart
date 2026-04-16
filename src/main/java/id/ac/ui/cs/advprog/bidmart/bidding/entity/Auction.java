@@ -36,4 +36,7 @@ public class Auction {
 
     @Column(nullable = false)
     private Double startingPrice;
+
+    @Column(nullable = false)
+    private String sellerId;
 }

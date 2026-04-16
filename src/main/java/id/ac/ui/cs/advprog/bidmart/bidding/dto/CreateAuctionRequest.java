@@ -10,4 +10,5 @@ public class CreateAuctionRequest {
     private Double startingPrice;
     private Double reservePrice;
     private Integer durationInMinutes;
+    private String sellerId;
 }

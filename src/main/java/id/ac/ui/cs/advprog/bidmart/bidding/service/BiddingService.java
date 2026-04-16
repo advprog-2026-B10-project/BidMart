@@ -42,6 +42,8 @@ public class BiddingService {
 
         auction.setStatus(AuctionStatus.DRAFT);
 
+        auction.setSellerId(request.getSellerId());
+
         return auctionRepository.save(auction);
     }
 
