@@ -3,6 +3,8 @@ package id.ac.ui.cs.advprog.bidmart.notification.listener;
 import id.ac.ui.cs.advprog.bidmart.wallet.model.TransactionCreatedEvent;
 import id.ac.ui.cs.advprog.bidmart.wallet.model.Transaction;
 import id.ac.ui.cs.advprog.bidmart.notification.entity.Notification;
+import id.ac.ui.cs.advprog.bidmart.notification.entity.NotificationChannel;
+import id.ac.ui.cs.advprog.bidmart.notification.entity.NotificationType;
 import id.ac.ui.cs.advprog.bidmart.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
@@ -22,7 +24,10 @@ public class TransactionEventListener {
 
         Notification notification = Notification.builder()
                 .userId(tx.getUserId())
+                .title("Transaksi Dompet")
                 .message(message)
+                .type(NotificationType.TRANSACTION)
+                .channel(NotificationChannel.IN_APP)
                 .isRead(false)
                 .build();
 
