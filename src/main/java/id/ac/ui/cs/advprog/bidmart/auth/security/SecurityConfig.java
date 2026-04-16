@@ -48,8 +48,8 @@ public class SecurityConfig {
                 )
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/verify").permitAll()
-                .requestMatchers("/api/auth/profile").authenticated()
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/verify", "/api/auth/refresh").permitAll()
+                .requestMatchers("/api/auth/profile", "/api/auth/mfa/toggle", "/api/auth/logout").authenticated()
                 .requestMatchers("/api/auth/users").hasRole("ADMIN") 
                 .anyRequest().authenticated()
             )

@@ -71,6 +71,15 @@ public class AuthService {
             throw new AuthException(HttpStatus.FORBIDDEN, "Please verify your email first");
         }
 
+        if (user.isMfaEnabled()) {
+            return AuthResponse.builder()
+                    .email(user.getEmail())
+                    .role(user.getRole().name())
+                    .mfaRequired(true)
+                    .message("MFA verification is required")
+                    .build();
+        }
+
         String accessToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
@@ -89,6 +98,7 @@ public class AuthService {
                 .expiresIn(jwtService.getAccessTokenExpiration() / 1000)
                 .email(user.getEmail())
                 .role(user.getRole().name())
+            .mfaRequired(false)
                 .build();
     }
 
@@ -119,6 +129,23 @@ public class AuthService {
                 .expiresIn(jwtService.getAccessTokenExpiration() / 1000)
                 .email(user.getEmail())
                 .role(user.getRole().name())
+                .mfaRequired(false)
+                .build();
+    }
+
+    public MfaStatusResponse toggleMfa(String email, boolean enabled) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
+
+        user.setMfaEnabled(enabled);
+        if (enabled) {
+            user.setMfaSecretSet(true);
+        }
+        userRepository.save(user);
+
+        return MfaStatusResponse.builder()
+                .mfaEnabled(user.isMfaEnabled())
+                .message(enabled ? "MFA enabled successfully" : "MFA disabled successfully")
                 .build();
     }
 

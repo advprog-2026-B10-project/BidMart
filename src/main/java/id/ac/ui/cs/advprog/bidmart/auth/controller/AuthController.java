@@ -7,6 +7,8 @@ import id.ac.ui.cs.advprog.bidmart.auth.dto.ProfileResponse;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.RegisterRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.UpdateProfileRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.RefreshTokenRequest;
+import id.ac.ui.cs.advprog.bidmart.auth.dto.MfaToggleRequest;
+import id.ac.ui.cs.advprog.bidmart.auth.dto.MfaStatusResponse;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -79,5 +81,14 @@ public class AuthController {
     public ResponseEntity<String> logout(Authentication authentication) {
         authService.logout(authentication.getName());
         return ResponseEntity.ok("Logged out successfully");
+    }
+
+    @PostMapping("/mfa/toggle")
+    public ResponseEntity<MfaStatusResponse> toggleMfa(
+            Authentication authentication,
+            @Valid @RequestBody MfaToggleRequest request
+    ) {
+        MfaStatusResponse response = authService.toggleMfa(authentication.getName(), request.getEnabled());
+        return ResponseEntity.ok(response);
     }
 }

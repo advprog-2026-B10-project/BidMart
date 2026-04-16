@@ -366,4 +366,80 @@ class AuthControllerIntegrationTest {
                                 .andExpect(jsonPath("$.message").value("Validation failed"))
                                 .andExpect(jsonPath("$.details", hasKey("phoneNumber")));
         }
+
+        @Test
+        void loginWithMfaEnabledReturnsMfaRequiredWithoutAccessToken() throws Exception {
+                User buyer = User.builder()
+                                .email("mfauser@example.com")
+                                .password(passwordEncoder.encode("Password!1"))
+                                .displayName("Mfa User")
+                                .role(Role.BUYER)
+                                .isEnabled(true)
+                                .mfaEnabled(true)
+                                .build();
+                userRepository.save(buyer);
+
+                String loginPayload = """
+                        {
+                            "email": "mfauser@example.com",
+                            "password": "Password!1"
+                        }
+                        """;
+
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(loginPayload))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.mfaRequired").value(true))
+                        .andExpect(jsonPath("$.message").value("MFA verification is required"))
+                        .andExpect(jsonPath("$.token").doesNotExist())
+                        .andExpect(jsonPath("$.refreshToken").doesNotExist());
+        }
+
+        @Test
+        void toggleMfaWithAuthenticatedUserUpdatesMfaFlag() throws Exception {
+                User buyer = User.builder()
+                                .email("togglemfa@example.com")
+                                .password(passwordEncoder.encode("Password!1"))
+                                .displayName("Toggle Mfa")
+                                .role(Role.BUYER)
+                                .isEnabled(true)
+                                .mfaEnabled(false)
+                                .build();
+                userRepository.save(buyer);
+
+                String loginPayload = """
+                        {
+                            "email": "togglemfa@example.com",
+                            "password": "Password!1"
+                        }
+                        """;
+
+                String responseBody = mockMvc.perform(post("/api/auth/login")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(loginPayload))
+                                .andExpect(status().isOk())
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString();
+
+                String token = objectMapper.readTree(responseBody).get("token").asText();
+
+                String togglePayload = """
+                        {
+                            "enabled": true
+                        }
+                        """;
+
+                mockMvc.perform(post("/api/auth/mfa/toggle")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(togglePayload))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.mfaEnabled").value(true))
+                        .andExpect(jsonPath("$.message").value("MFA enabled successfully"));
+
+                User updated = userRepository.findByEmail("togglemfa@example.com").orElseThrow();
+                org.junit.jupiter.api.Assertions.assertTrue(updated.isMfaEnabled());
+        }
 }
