@@ -24,6 +24,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService jwtService; 
+    private final MfaTotpService mfaTotpService;
     private final EmailService emailService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -72,11 +73,16 @@ public class AuthService {
         }
 
         if (user.isMfaEnabled()) {
+            if (user.getMfaSecret() == null || user.getMfaSecret().isBlank()) {
+                throw new AuthException(HttpStatus.CONFLICT, "MFA is enabled but not configured for this account");
+            }
+
             return AuthResponse.builder()
                     .email(user.getEmail())
                     .role(user.getRole().name())
                     .mfaRequired(true)
                     .message("MFA verification is required")
+                    .mfaChallengeToken(jwtService.generateMfaChallengeToken(user))
                     .build();
         }
 
@@ -133,19 +139,65 @@ public class AuthService {
                 .build();
     }
 
+    public AuthResponse verifyMfa(MfaVerifyRequest request) {
+        if (!jwtService.isMfaChallengeTokenValid(request.getChallengeToken())) {
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "Invalid MFA challenge token");
+        }
+
+        String email = jwtService.extractEmail(request.getChallengeToken());
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!user.isMfaEnabled() || user.getMfaSecret() == null || user.getMfaSecret().isBlank()) {
+            throw new AuthException(HttpStatus.CONFLICT, "MFA is not enabled for this user");
+        }
+
+        if (!mfaTotpService.verifyCode(user.getMfaSecret(), request.getCode())) {
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "Invalid MFA code");
+        }
+
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        RefreshToken token = RefreshToken.builder()
+                .token(refreshToken)
+                .email(user.getEmail())
+                .expiresAt(Instant.now().plusSeconds(7 * 24 * 60 * 60))
+                .revoked(false)
+                .build();
+        refreshTokenRepository.save(token);
+
+        return AuthResponse.builder()
+                .token(accessToken)
+                .refreshToken(refreshToken)
+                .expiresIn(jwtService.getAccessTokenExpiration() / 1000)
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .mfaRequired(false)
+                .build();
+    }
+
     public MfaStatusResponse toggleMfa(String email, boolean enabled) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
 
         user.setMfaEnabled(enabled);
         if (enabled) {
+            if (user.getMfaSecret() == null || user.getMfaSecret().isBlank()) {
+                user.setMfaSecret(mfaTotpService.generateSecret());
+            }
             user.setMfaSecretSet(true);
+        } else {
+            user.setMfaSecret(null);
+            user.setMfaSecretSet(false);
         }
         userRepository.save(user);
 
         return MfaStatusResponse.builder()
                 .mfaEnabled(user.isMfaEnabled())
                 .message(enabled ? "MFA enabled successfully" : "MFA disabled successfully")
+                .secret(enabled ? user.getMfaSecret() : null)
+                .otpauthUri(enabled ? mfaTotpService.buildOtpAuthUri(user.getEmail(), user.getMfaSecret()) : null)
                 .build();
     }
 

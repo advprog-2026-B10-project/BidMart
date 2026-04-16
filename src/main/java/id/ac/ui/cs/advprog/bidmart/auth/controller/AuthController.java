@@ -9,6 +9,7 @@ import id.ac.ui.cs.advprog.bidmart.auth.dto.UpdateProfileRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.RefreshTokenRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.MfaToggleRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.MfaStatusResponse;
+import id.ac.ui.cs.advprog.bidmart.auth.dto.MfaVerifyRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -38,6 +39,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/mfa/verify")
+    public ResponseEntity<AuthResponse> verifyMfa(@Valid @RequestBody MfaVerifyRequest request) {
+        AuthResponse response = authService.verifyMfa(request);
         return ResponseEntity.ok(response);
     }
 

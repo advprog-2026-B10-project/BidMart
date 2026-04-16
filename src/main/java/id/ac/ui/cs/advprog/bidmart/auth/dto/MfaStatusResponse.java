@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 public class MfaStatusResponse {
     private boolean mfaEnabled;
     private String message;
+    private String secret;
+    private String otpauthUri;
 }

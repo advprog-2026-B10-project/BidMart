@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.Role;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.User;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
+import id.ac.ui.cs.advprog.bidmart.auth.service.MfaTotpService;
 import id.ac.ui.cs.advprog.bidmart.auth.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,9 @@ class AuthControllerIntegrationTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+        @Autowired
+        private MfaTotpService mfaTotpService;
 
     @MockBean
     private EmailService emailService;
@@ -376,6 +380,8 @@ class AuthControllerIntegrationTest {
                                 .role(Role.BUYER)
                                 .isEnabled(true)
                                 .mfaEnabled(true)
+                                .mfaSecret(mfaTotpService.generateSecret())
+                                .mfaSecretSet(true)
                                 .build();
                 userRepository.save(buyer);
 
@@ -437,9 +443,62 @@ class AuthControllerIntegrationTest {
                                 .content(togglePayload))
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.mfaEnabled").value(true))
-                        .andExpect(jsonPath("$.message").value("MFA enabled successfully"));
+                        .andExpect(jsonPath("$.message").value("MFA enabled successfully"))
+                        .andExpect(jsonPath("$.secret").exists())
+                        .andExpect(jsonPath("$.otpauthUri").exists());
 
                 User updated = userRepository.findByEmail("togglemfa@example.com").orElseThrow();
                 org.junit.jupiter.api.Assertions.assertTrue(updated.isMfaEnabled());
+                org.junit.jupiter.api.Assertions.assertNotNull(updated.getMfaSecret());
+        }
+
+        @Test
+        void verifyMfaWithValidCodeReturnsTokens() throws Exception {
+                User buyer = User.builder()
+                                .email("mfaverify@example.com")
+                                .password(passwordEncoder.encode("Password!1"))
+                                .displayName("Mfa Verify")
+                                .role(Role.BUYER)
+                                .isEnabled(true)
+                                .mfaEnabled(true)
+                                .mfaSecret(mfaTotpService.generateSecret())
+                                .mfaSecretSet(true)
+                                .build();
+                userRepository.save(buyer);
+
+                String loginPayload = """
+                        {
+                            "email": "mfaverify@example.com",
+                            "password": "Password!1"
+                        }
+                        """;
+
+                String loginBody = mockMvc.perform(post("/api/auth/login")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(loginPayload))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.mfaRequired").value(true))
+                                .andExpect(jsonPath("$.mfaChallengeToken").exists())
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString();
+
+                String challengeToken = objectMapper.readTree(loginBody).get("mfaChallengeToken").asText();
+                String code = mfaTotpService.generateCurrentCode(buyer.getMfaSecret());
+
+                String verifyPayload = """
+                        {
+                            "challengeToken": "%s",
+                            "code": "%s"
+                        }
+                        """.formatted(challengeToken, code);
+
+                mockMvc.perform(post("/api/auth/mfa/verify")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(verifyPayload))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.token").exists())
+                        .andExpect(jsonPath("$.refreshToken").exists())
+                        .andExpect(jsonPath("$.mfaRequired").value(false));
         }
 }

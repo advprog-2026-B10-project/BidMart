@@ -17,4 +17,5 @@ public class AuthResponse {
     private String role;
     private boolean mfaRequired;
     private String message;
+    private String mfaChallengeToken;
 }

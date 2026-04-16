@@ -44,6 +44,9 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean mfaSecretSet = false;
 
+    @Column(name = "mfa_secret")
+    private String mfaSecret;
+
     @Column(name = "verification_token")
     private String verificationToken;
 
