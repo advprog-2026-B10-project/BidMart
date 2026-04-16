@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.grouppreparation.katalog.model;
+package id.ac.ui.cs.advprog.bidmart.catalog.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -10,7 +10,7 @@ import java.util.List;
 @Table(name = "kategori")
 @Getter
 @Setter
-public class Kategori {
+public class Category {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,14 +22,14 @@ public class Kategori {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     @JsonIgnore
-    private Kategori parent;
+    private Category parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
-    private List<Kategori> subKategori;
+    private List<Category> subCategory;
 
-    public Kategori() {}
+    public Category() {}
 
-    public Kategori(String nama, Kategori parent) {
+    public Category(String nama, Category parent) {
         this.nama = nama;
         this.parent = parent;
     }

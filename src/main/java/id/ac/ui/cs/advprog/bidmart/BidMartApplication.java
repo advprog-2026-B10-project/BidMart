@@ -1,13 +1,13 @@
-package id.ac.ui.cs.advprog.grouppreparation;
+package id.ac.ui.cs.advprog.bidmart;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class GroupPreparationApplication {
+public class BidMartApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(GroupPreparationApplication.class, args);
+		SpringApplication.run(BidMartApplication.class, args);
 	}
 
 }

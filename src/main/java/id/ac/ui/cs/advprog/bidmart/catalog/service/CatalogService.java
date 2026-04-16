@@ -1,7 +1,7 @@
-package id.ac.ui.cs.advprog.grouppreparation.katalog.service;
+package id.ac.ui.cs.advprog.bidmart.catalog.service;
 
-import id.ac.ui.cs.advprog.grouppreparation.katalog.model.Katalog;
-import id.ac.ui.cs.advprog.grouppreparation.katalog.repository.KatalogRepository;
+import id.ac.ui.cs.advprog.bidmart.catalog.entity.Catalog;
+import id.ac.ui.cs.advprog.bidmart.catalog.repository.CatalogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,30 +10,30 @@ import java.util.List;
 import jakarta.persistence.criteria.Predicate;
 
 @Service
-public class KatalogService {
+public class CatalogService {
 
-    private final KatalogRepository katalogRepository;
+    private final CatalogRepository catalogRepository;
 
     @Autowired
-    public KatalogService(KatalogRepository katalogRepository) {
-        this.katalogRepository = katalogRepository;
+    public CatalogService(CatalogRepository catalogRepository) {
+        this.catalogRepository = catalogRepository;
     }
 
-    public Katalog createListing(Katalog katalog) {
-        return katalogRepository.save(katalog);
+    public Catalog createListing(Catalog katalog) {
+        return catalogRepository.save(katalog);
     }
 
     // Method buat dipanggil Controller
-    public List<Katalog> getAllKatalog() {
-        return katalogRepository.findAll();
+    public List<Catalog> getAllKatalog() {
+        return catalogRepository.findAll();
     }
 
-    public Katalog getKatalogById(Long id) {
-        return katalogRepository.findById(id).orElse(null);
+    public Catalog getKatalogById(Long id) {
+        return catalogRepository.findById(id).orElse(null);
     }
 
-    public List<Katalog> searchKatalog(String keyword, Long categoryId, Double minPrice, Double maxPrice) {
-        return katalogRepository.findAll((root, query, cb) -> {
+    public List<Catalog> searchKatalog(String keyword, Long categoryId, Double minPrice, Double maxPrice) {
+        return catalogRepository.findAll((root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             // Cari di kolom 'judul' ATAU 'deskripsi'
@@ -62,23 +62,23 @@ public class KatalogService {
     }
 
     // FITUR 2 & 3: Validasi "No Bids" sebelum Update/Cancel
-    public Katalog updateListing(Long id, String deskripsi, String gambar) {
-        Katalog item = katalogRepository.findById(id)
+    public Catalog updateListing(Long id, String deskripsi, String gambar) {
+        Catalog item = catalogRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Item tidak ditemukan"));
 
-        if (katalogRepository.hasBids(id)) {
+        if (catalogRepository.hasBids(id)) {
             throw new IllegalStateException("Gagal: Sudah ada penawaran masuk!");
         }
 
         item.setDeskripsi(deskripsi);
         item.setGambar(gambar);
-        return katalogRepository.save(item);
+        return catalogRepository.save(item);
     }
 
     public void cancelListing(Long id) {
-        if (katalogRepository.hasBids(id)) {
+        if (catalogRepository.hasBids(id)) {
             throw new IllegalStateException("Gagal: Tidak bisa cancel karena sudah ada penawaran!");
         }
-        katalogRepository.deleteById(id);
+        catalogRepository.deleteById(id);
     }
 }

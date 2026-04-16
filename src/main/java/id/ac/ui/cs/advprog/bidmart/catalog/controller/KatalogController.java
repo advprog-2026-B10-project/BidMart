@@ -1,7 +1,7 @@
-package id.ac.ui.cs.advprog.grouppreparation.katalog.controller;
+package id.ac.ui.cs.advprog.bidmart.catalog.controller;
 
-import id.ac.ui.cs.advprog.grouppreparation.katalog.model.Katalog;
-import id.ac.ui.cs.advprog.grouppreparation.katalog.service.KatalogService;
+import id.ac.ui.cs.advprog.bidmart.catalog.entity.Catalog;
+import id.ac.ui.cs.advprog.bidmart.catalog.service.CatalogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,27 +14,27 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class KatalogController {
 
-    private final KatalogService katalogService;
+    private final CatalogService catalogService;
 
     @Autowired
-    public KatalogController(KatalogService katalogService) {
-        this.katalogService = katalogService;
+    public KatalogController(CatalogService catalogService) {
+        this.catalogService = catalogService;
     }
 
     @PostMapping
-    public ResponseEntity<Katalog> createListing(@RequestBody Katalog katalog) {
-        Katalog newKatalog = katalogService.createListing(katalog);
+    public ResponseEntity<Catalog> createListing(@RequestBody Catalog katalog) {
+        Catalog newKatalog = catalogService.createListing(katalog);
         return ResponseEntity.ok(newKatalog);
     }
 
     @GetMapping
-    public ResponseEntity<List<Katalog>> getAllKatalog() {
-        return ResponseEntity.ok(katalogService.getAllKatalog());
+    public ResponseEntity<List<Catalog>> getAllKatalog() {
+        return ResponseEntity.ok(catalogService.getAllKatalog());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Katalog> getKatalogById(@PathVariable Long id) {
-        Katalog katalog = katalogService.getKatalogById(id);
+    public ResponseEntity<Catalog> getKatalogById(@PathVariable Long id) {
+        Catalog katalog = catalogService.getKatalogById(id);
         if (katalog != null) {
             return ResponseEntity.ok(katalog);
         } else {
@@ -43,12 +43,12 @@ public class KatalogController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Katalog>> search(
+    public ResponseEntity<List<Catalog>> search(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Long cat,
             @RequestParam(required = false) Double min,
             @RequestParam(required = false) Double max) {
-        return ResponseEntity.ok(katalogService.searchKatalog(q, cat, min, max));
+        return ResponseEntity.ok(catalogService.searchKatalog(q, cat, min, max));
     }
 
     // Endpoint: PUT /api/katalog/update/5
@@ -57,7 +57,7 @@ public class KatalogController {
         try {
             String deskripsi = body.get("deskripsi");
             String gambar = body.get("gambar");
-            Katalog updated = katalogService.updateListing(id, deskripsi, gambar);
+            Catalog updated = catalogService.updateListing(id, deskripsi, gambar);
             return ResponseEntity.ok(updated);
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
@@ -67,7 +67,7 @@ public class KatalogController {
     @DeleteMapping("/cancel/{id}")
     public ResponseEntity<?> cancel(@PathVariable Long id) {
         try {
-            katalogService.cancelListing(id);
+            catalogService.cancelListing(id);
             return ResponseEntity.ok(Map.of("message", "Listing berhasil dibatalkan"));
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));

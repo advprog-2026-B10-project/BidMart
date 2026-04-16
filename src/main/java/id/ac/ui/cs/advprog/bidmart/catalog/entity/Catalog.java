@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.grouppreparation.katalog.model;
+package id.ac.ui.cs.advprog.bidmart.catalog.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
@@ -9,7 +9,7 @@ import lombok.Setter;
 @Table(name = "katalog")
 @Getter
 @Setter
-public class Katalog {
+public class Catalog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,7 +26,7 @@ public class Katalog {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "kategori_id")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    private Kategori kategori;
+    private Category category;
 
     @Column(nullable = false)
     private Double hargaAwal;
@@ -35,13 +35,13 @@ public class Katalog {
 
     private Integer durasiLelang;
 
-    public Katalog() {}
+    public Catalog() {}
 
-    public Katalog(String judul, String deskripsi, String gambar, Kategori kategori, Double hargaAwal, Double hargaCadangan, Integer durasiLelang) {
+    public Catalog(String judul, String deskripsi, String gambar, Category category, Double hargaAwal, Double hargaCadangan, Integer durasiLelang) {
         this.judul = judul;
         this.deskripsi = deskripsi;
         this.gambar = gambar;
-        this.kategori = kategori;
+        this.category = category;
         this.hargaAwal = hargaAwal;
         this.hargaCadangan = hargaCadangan;
         this.durasiLelang = durasiLelang;

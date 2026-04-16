@@ -1,10 +1,10 @@
-package id.ac.ui.cs.advprog.grouppreparation;
+package id.ac.ui.cs.advprog.bidmart;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class GroupPreparationApplicationTests {
+class BidMartApplicationTests {
 
 	@Test
 	void contextLoads() {
