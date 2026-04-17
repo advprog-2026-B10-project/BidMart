@@ -25,7 +25,7 @@ public class Category {
     private Category parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
-    private List<Category> subKategori;
+    private List<Category> subCategory;
 
     public Category() {}
 
