@@ -47,7 +47,7 @@ public class CatalogService {
             // Filter Kategori
             if (categoryId != null) {
                 // Lu ambil field 'kategori' (objek), terus ambil field 'id' di dalemnya
-                predicates.add(cb.equal(root.get("kategori").get("id"), categoryId));
+                predicates.add(cb.equal(root.get("category").get("id"), categoryId));
             }
             // Filter Rentang Harga
             if (minPrice != null) {

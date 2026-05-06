@@ -35,9 +35,14 @@ public class Catalog {
 
     private Integer durasiLelang;
 
+
+    private String sellerId;
+
+    private Double hargaSekarang;
+
     public Catalog() {}
 
-    public Catalog(String judul, String deskripsi, String gambar, Category category, Double hargaAwal, Double hargaCadangan, Integer durasiLelang) {
+    public Catalog(String judul, String deskripsi, String gambar, Category category, Double hargaAwal, Double hargaCadangan, Integer durasiLelang, String sellerId) {
         this.judul = judul;
         this.deskripsi = deskripsi;
         this.gambar = gambar;
@@ -45,5 +50,7 @@ public class Catalog {
         this.hargaAwal = hargaAwal;
         this.hargaCadangan = hargaCadangan;
         this.durasiLelang = durasiLelang;
+        this.sellerId = sellerId;
+        this.hargaSekarang = hargaAwal;
     }
 }
