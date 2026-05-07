@@ -13,6 +13,7 @@ public class AdminUserResponse {
     private String displayName;
     private boolean enabled;
     private Role role;
+    private long activeSessions;
 
     public static AdminUserResponse fromUser(User user) {
         return new AdminUserResponse(
@@ -20,7 +21,19 @@ public class AdminUserResponse {
                 user.getEmail(),
                 user.getDisplayName(),
                 user.isEnabled(),
-                user.getRole()
+                user.getRole(),
+                0
+        );
+    }
+
+    public static AdminUserResponse fromUser(User user, long activeSessions) {
+        return new AdminUserResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getDisplayName(),
+                user.isEnabled(),
+                user.getRole(),
+                activeSessions
         );
     }
 }
