@@ -10,11 +10,27 @@ interface User {
   email: string;
   displayName: string;
   enabled: boolean;
-  role: string; 
+  role: string;
+  activeSessions: number;
+}
+
+interface Catalog {
+  id: number;
+  judul: string;
+  deskripsi: string;
+  hargaAwal: number;
+  category?: {
+    id: number;
+    name?: string;
+  } | null;
 }
 
 export default function HomePage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [catalogs, setCatalogs] = useState<Catalog[]>([]);
+  const [roleDrafts, setRoleDrafts] = useState<Record<number, string>>({});
+  const [actionMessage, setActionMessage] = useState<string>('');
+  const [actionError, setActionError] = useState<string>('');
   const router = useRouter();
 
   const currentUser = useSyncExternalStore(
@@ -33,8 +49,24 @@ export default function HomePage() {
     try {
       const response = await axiosClient.get('/auth/users');
       setUsers(response.data);
+      const nextDrafts: Record<number, string> = {};
+      response.data.forEach((user: User) => {
+        nextDrafts[user.id] = user.role;
+      });
+      setRoleDrafts(nextDrafts);
     } catch (err) {
       console.error("Error fetching users:", err);
+      setActionError('Failed to fetch users');
+    }
+  }, []);
+
+  const fetchCatalogs = useCallback(async () => {
+    try {
+      const response = await axiosClient.get('/katalog');
+      setCatalogs(response.data);
+    } catch (err) {
+      console.error('Error fetching catalogs:', err);
+      setActionError('Failed to fetch catalog');
     }
   }, []);
 
@@ -48,9 +80,9 @@ export default function HomePage() {
   useEffect(() => {
     if (userRole === 'ADMIN') {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchUsers();
+      void Promise.all([fetchUsers(), fetchCatalogs()]);
     }
-  }, [userRole, fetchUsers]);
+  }, [userRole, fetchUsers, fetchCatalogs]);
 
   const getRoleBadgeStyle = (role: string) => {
     switch (role?.toUpperCase()) {
@@ -67,6 +99,35 @@ export default function HomePage() {
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const handleRevokeSessions = async (userId: number) => {
+    setActionMessage('');
+    setActionError('');
+    try {
+      const response = await axiosClient.post(`/auth/admin/users/${userId}/sessions/revoke`);
+      setActionMessage(`Revoked ${response.data.revokedSessions} session(s) for user #${userId}`);
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error revoking sessions:', err);
+      setActionError('Failed to revoke sessions');
+    }
+  };
+
+  const handleRoleChange = async (userId: number) => {
+    setActionMessage('');
+    setActionError('');
+    try {
+      const nextRole = roleDrafts[userId];
+      await axiosClient.patch(`/auth/admin/users/${userId}/role`, {
+        role: nextRole,
+      });
+      setActionMessage(`Role updated for user #${userId}`);
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error updating role:', err);
+      setActionError('Failed to update role');
+    }
   };
 
   return (
@@ -98,42 +159,116 @@ export default function HomePage() {
 
         {/* Conditional Rendering based on Role */}
         {userRole === 'ADMIN' ? (
-          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
-              <h3 className="text-xl font-semibold">System Management: Registered Users</h3>
-              <span className="text-xs text-gray-500 italic">Admin Only Access</span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-gray-700/50 text-gray-300 text-sm uppercase">
-                  <tr>
-                    <th className="px-6 py-4 border-b border-gray-700">ID</th>
-                    <th className="px-6 py-4 border-b border-gray-700">Display Name</th>
-                    <th className="px-6 py-4 border-b border-gray-700">Email</th>
-                    <th className="px-6 py-4 border-b border-gray-700">Role</th>
-                    <th className="px-6 py-4 text-center border-b border-gray-700">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-700/30 transition-colors group">
-                      <td className="px-6 py-4 text-gray-500 text-sm">{user.id}</td>
-                      <td className="px-6 py-4 font-medium group-hover:text-blue-400 transition-colors">{user.displayName}</td>
-                      <td className="px-6 py-4 text-gray-300">{user.email}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getRoleBadgeStyle(user.role)}`}>
-                          {user.role || 'USER'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${user.enabled ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                          {user.enabled ? 'Verified' : 'Pending'}
-                        </span>
-                      </td>
+          <div className="space-y-8">
+            {(actionMessage || actionError) && (
+              <div className={`rounded-lg px-4 py-3 text-sm ${actionError ? 'bg-red-500/15 text-red-300 border border-red-500/30' : 'bg-green-500/15 text-green-300 border border-green-500/30'}`}>
+                {actionError || actionMessage}
+              </div>
+            )}
+
+            <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
+              <div className="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+                <h3 className="text-xl font-semibold">System Management: Registered Users</h3>
+                <span className="text-xs text-gray-500 italic">Admin Only Access</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-gray-700/50 text-gray-300 text-sm uppercase">
+                    <tr>
+                      <th className="px-6 py-4 border-b border-gray-700">ID</th>
+                      <th className="px-6 py-4 border-b border-gray-700">Display Name</th>
+                      <th className="px-6 py-4 border-b border-gray-700">Email</th>
+                      <th className="px-6 py-4 border-b border-gray-700">Role</th>
+                      <th className="px-6 py-4 border-b border-gray-700">Sessions</th>
+                      <th className="px-6 py-4 text-center border-b border-gray-700">Status</th>
+                      <th className="px-6 py-4 border-b border-gray-700">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700">
+                    {users.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-700/30 transition-colors group align-top">
+                        <td className="px-6 py-4 text-gray-500 text-sm">{user.id}</td>
+                        <td className="px-6 py-4 font-medium group-hover:text-blue-400 transition-colors">{user.displayName}</td>
+                        <td className="px-6 py-4 text-gray-300">{user.email}</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getRoleBadgeStyle(user.role)}`}>
+                            {user.role || 'USER'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-gray-300">{user.activeSessions ?? 0}</td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${user.enabled ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                            {user.enabled ? 'Verified' : 'Pending'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col gap-2 min-w-52">
+                            <button
+                              onClick={() => handleRevokeSessions(user.id)}
+                              className="px-3 py-2 bg-amber-600 hover:bg-amber-700 rounded-md text-xs font-semibold transition"
+                            >
+                              Revoke Sessions
+                            </button>
+                            <div className="flex gap-2">
+                              <select
+                                value={roleDrafts[user.id] ?? user.role}
+                                onChange={(e) => setRoleDrafts((prev) => ({ ...prev, [user.id]: e.target.value }))}
+                                className="flex-1 bg-gray-900 border border-gray-600 rounded-md px-2 py-2 text-xs"
+                              >
+                                <option value="BUYER">BUYER</option>
+                                <option value="SELLER">SELLER</option>
+                                <option value="ADMIN">ADMIN</option>
+                              </select>
+                              <button
+                                onClick={() => handleRoleChange(user.id)}
+                                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-xs font-semibold transition"
+                              >
+                                Save Role
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
+              <div className="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+                <h3 className="text-xl font-semibold">Catalog Overview</h3>
+                <span className="text-xs text-gray-500 italic">{catalogs.length} item(s)</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-gray-700/50 text-gray-300 text-sm uppercase">
+                    <tr>
+                      <th className="px-6 py-4 border-b border-gray-700">ID</th>
+                      <th className="px-6 py-4 border-b border-gray-700">Title</th>
+                      <th className="px-6 py-4 border-b border-gray-700">Category</th>
+                      <th className="px-6 py-4 border-b border-gray-700">Starting Price</th>
+                      <th className="px-6 py-4 border-b border-gray-700">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700">
+                    {catalogs.map((catalog) => (
+                      <tr key={catalog.id} className="hover:bg-gray-700/30 transition-colors">
+                        <td className="px-6 py-4 text-gray-500 text-sm">{catalog.id}</td>
+                        <td className="px-6 py-4 text-gray-100 font-medium">{catalog.judul}</td>
+                        <td className="px-6 py-4 text-gray-300">{catalog.category?.name || '-'}</td>
+                        <td className="px-6 py-4 text-emerald-300">Rp {Number(catalog.hargaAwal || 0).toLocaleString()}</td>
+                        <td className="px-6 py-4 text-gray-400 text-sm max-w-md truncate">{catalog.deskripsi || '-'}</td>
+                      </tr>
+                    ))}
+                    {catalogs.length === 0 && (
+                      <tr>
+                        <td className="px-6 py-4 text-gray-500" colSpan={5}>No catalog items found.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         ) : (
