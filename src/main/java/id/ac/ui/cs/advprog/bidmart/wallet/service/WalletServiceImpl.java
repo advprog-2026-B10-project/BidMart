@@ -11,14 +11,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class WalletServiceImpl implements WalletService {
 
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
-    private final WalletRepository WalletRepository;
-    private final TransactionRepository TransactionRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -35,94 +35,90 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     @Transactional
-    public void topUp(String userId, Double amount) {
+    public void topUp(String userId, Double amount, String idempotencyKey) {
+        if (idempotencyKey != null && transactionRepository.existsByIdempotencyKey(idempotencyKey)) {
+            return;
+        }
+
         Wallet wallet = getOrCreateWallet(userId);
         wallet.setBalance(wallet.getBalance() + amount);
         walletRepository.save(wallet);
 
-        saveTransaction(userId, amount, "TOP_UP");
+        saveTransaction(userId, amount, "TOP_UP", idempotencyKey, "SUCCESS");
     }
 
     @Override
     @Transactional
-    public void withdraw(String userId, Double amount) {
+    public void withdraw(String userId, Double amount, String idempotencyKey) {
+        if (idempotencyKey != null && transactionRepository.existsByIdempotencyKey(idempotencyKey)) {
+            return;
+        }
+
         Wallet wallet = getOrCreateWallet(userId);
 
         if (wallet.getBalance() < amount) {
+            saveTransaction(userId, amount, "WITHDRAW", idempotencyKey, "FAILED");
             throw new RuntimeException("Insufficient balance");
         }
 
         wallet.setBalance(wallet.getBalance() - amount);
         walletRepository.save(wallet);
 
-        saveTransaction(userId, amount, "WITHDRAW");
+        saveTransaction(userId, amount, "WITHDRAW", idempotencyKey, "SUCCESS");
     }
 
     @Override
     @Transactional
     public void holdBalance(String userId, Double amount) {
         Wallet wallet = getOrCreateWallet(userId);
-
         if (wallet.getBalance() < amount) {
             throw new RuntimeException("Insufficient balance to hold");
         }
-
         wallet.setBalance(wallet.getBalance() - amount);
         wallet.setHeldBalance(wallet.getHeldBalance() + amount);
-
         walletRepository.save(wallet);
-        saveTransaction(userId, amount, "HOLD");
+        
+        saveTransaction(userId, amount, "HOLD", null, "SUCCESS");
     }
 
     @Override
     @Transactional
     public void releaseHeldBalance(String userId, Double amount) {
         Wallet wallet = getOrCreateWallet(userId);
-
+        if (wallet.getHeldBalance() < amount) {
+            throw new RuntimeException("Insufficient held balance to release");
+        }
         wallet.setHeldBalance(wallet.getHeldBalance() - amount);
         wallet.setBalance(wallet.getBalance() + amount);
-
         walletRepository.save(wallet);
-        saveTransaction(userId, amount, "RELEASE");
+        
+        saveTransaction(userId, amount, "RELEASE_HOLD", null, "SUCCESS");
     }
 
     @Override
     @Transactional
     public void deductHeldBalance(String userId, Double amount) {
         Wallet wallet = getOrCreateWallet(userId);
-
+        if (wallet.getHeldBalance() < amount) {
+            throw new RuntimeException("Insufficient held balance");
+        }
         wallet.setHeldBalance(wallet.getHeldBalance() - amount);
-
         walletRepository.save(wallet);
-        saveTransaction(userId, amount, "PAYMENT");
-    }
-
-    private void saveTransaction(String userId, Double amount, String type) {
-        Transaction transaction = transactionRepository.save(
-                Transaction.builder()
-                        .userId(userId)
-                        .amount(amount)
-                        .type(type)
-                        .build()
-        );
-        // Publikasi event transaksi
-        eventPublisher.publishEvent(new TransactionCreatedEvent(this, transaction));
+        
+        saveTransaction(userId, amount, "DEDUCT_HOLD", null, "SUCCESS");
     }
 
     @Override
     @Transactional
     public void payFromHeldBalance(String userId, Double amount) {
         Wallet wallet = getOrCreateWallet(userId);
-
         if (wallet.getHeldBalance() < amount) {
             throw new RuntimeException("Insufficient held balance");
         }
-
         wallet.setHeldBalance(wallet.getHeldBalance() - amount);
-
         walletRepository.save(wallet);
-
-        saveTransaction(userId, amount, "PAYMENT");
+        
+        saveTransaction(userId, amount, "PAYMENT", null, "SUCCESS");
     }
 
     @Override
@@ -131,20 +127,37 @@ public class WalletServiceImpl implements WalletService {
         Wallet wallet = walletRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Wallet not found"));
 
-        // KOREKSI: Potong dari heldBalance, karena dana sudah di-hold saat bid
-        if (wallet.getHeldBalance() < amount) {
+        Double amountDouble = amount.doubleValue();
+
+        if (wallet.getHeldBalance() < amountDouble) {
             throw new RuntimeException("Insufficient held balance");
         }
 
-        wallet.setHeldBalance(wallet.getHeldBalance() - amount.doubleValue());
+        wallet.setHeldBalance(wallet.getHeldBalance() - amountDouble);
         walletRepository.save(wallet);
 
-        // TODO 2: Publikasi Event (Menggunakan WalletEvent sesuai file kamu)
         eventPublisher.publishEvent(new WalletEvent(userId));
 
-        // Simpan juga ke history transaksi
-        saveTransaction(userId, amount.doubleValue(), "WIN_PAYMENT");
+        saveTransaction(userId, amountDouble, "WIN_PAYMENT", null, "SUCCESS");
 
         System.out.println("WIN AUCTION processed for " + userId);
+    }
+
+    @Override
+    public List<Transaction> getAllTransactions() {
+        return transactionRepository.findAll();
+    }
+
+    private void saveTransaction(String userId, Double amount, String type, String idempotencyKey, String status) {
+        Transaction transaction = transactionRepository.save(
+                Transaction.builder()
+                        .userId(userId)
+                        .amount(amount)
+                        .type(type)
+                        .idempotencyKey(idempotencyKey)
+                        .status(status)
+                        .build()
+        );
+        eventPublisher.publishEvent(new TransactionCreatedEvent(this, transaction));
     }
 }

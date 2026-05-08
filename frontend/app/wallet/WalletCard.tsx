@@ -1,93 +1,172 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-export default function WalletCard() {
-    const [userId, setUserId] = useState('johnseller@gmail.com');
+interface BalanceInfo {
+    balance: number;
+    heldBalance: number;
+}
+
+interface WalletCardProps {
+    role?: 'seller' | 'buyer';
+    userId: string;
+}
+
+export default function WalletCard({ role = 'buyer', userId }: WalletCardProps) {
+
     const [amount, setAmount] = useState('');
+    const [balanceInfo, setBalanceInfo] = useState<BalanceInfo | null>(null);
     const [status, setStatus] = useState({ msg: '', isError: false });
+    const [loadingBalance, setLoadingBalance] = useState(true);
+
+    const fetchBalance = useCallback(async () => {
+        if (!userId) return;
+        setLoadingBalance(true);
+        try {
+            const res = await fetch(`http://localhost:8080/wallet/balance?userId=${userId}`);
+            if (res.ok) {
+                const data = await res.json();
+                setBalanceInfo(data);
+            }
+        } catch {
+            console.error("Gagal fetch balance");
+        } finally {
+            setLoadingBalance(false);
+        }
+    }, [userId]);
+
+    useEffect(() => {
+        fetchBalance();
+    }, [fetchBalance]);
 
     const handleTransaction = async (type: 'topup' | 'withdraw') => {
         if (!amount) return;
+        const idempotencyKey = crypto.randomUUID();
         try {
-            const res = await fetch(`http://localhost:8080/wallet/${type}?userId=${userId}&amount=${amount}`, {
+            const res = await fetch(
+                `http://localhost:8080/wallet/${type}?userId=${userId}&amount=${amount}`,
+                {
+                    method: 'POST',
+                    headers: { 'X-Idempotency-Key': idempotencyKey }
+                }
+            );
+
+            if (res.ok) {
+                setStatus({ msg: `${type.toUpperCase()} Success!`, isError: false });
+                setAmount('');
+                fetchBalance();
+            } else {
+                setStatus({ msg: `${type.toUpperCase()} Failed!`, isError: true });
+            }
+        } catch (err) {
+            setStatus({ msg: "Connection error", isError: true });
+        }
+    };
+
+    const handleWinAuction = async () => {
+        try {
+            const res = await fetch(`http://localhost:8080/wallet/test-event?userId=${userId}`, {
                 method: 'POST'
             });
-            const text = await res.text();
-            setStatus({ msg: text, isError: !res.ok });
+            if (res.ok) {
+                setStatus({ msg: "Win Auction Event Published!", isError: false });
+                setTimeout(fetchBalance, 1000);
+            }
         } catch (err) {
-            setStatus({ msg: "Connection failed", isError: true });
+            setStatus({ msg: "Failed to publish event", isError: true });
         }
     };
 
-    // Simulasi MENANG AUCTION
-    const handleWinAuction = async () => {
-        if (!amount) return;
-        try {
-            const res = await fetch(
-                `http://localhost:8080/wallet/win?userId=${userId}&amount=${amount}`,
-                { method: 'POST' }
-            );
-            const text = await res.text();
-            setStatus({ msg: "WIN EVENT: " + text, isError: !res.ok });
-        } catch (err) {
-            setStatus({ msg: "Win simulation failed", isError: true });
-        }
-    };
-
-    //      Test event publish manual
     const handlePublishEvent = async () => {
         try {
-            const res = await fetch(
-                `http://localhost:8080/wallet/test-event?userId=${userId}`,
-                { method: 'POST' }
-            );
-            const text = await res.text();
-            setStatus({ msg: "EVENT: " + text, isError: !res.ok });
+            const res = await fetch(`http://localhost:8080/wallet/test-event?userId=${userId}`, {
+                method: 'POST'
+            });
+            if (res.ok) {
+                setStatus({ msg: "Test Event Published!", isError: false });
+            }
         } catch (err) {
-            setStatus({ msg: "Event publish failed", isError: true });
+            setStatus({ msg: "Failed to publish event", isError: true });
         }
     };
 
     return (
-        <div className="bg-[#1e293b] p-8 rounded-2xl border border-gray-800 shadow-2xl max-w-lg mx-auto">
-            <h2 className="text-xl font-bold text-white mb-6">Digital Wallet</h2>
+        <div className="bg-[#1e293b] p-8 rounded-3xl border border-gray-800 shadow-2xl max-w-md mx-auto">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-white">Digital Wallet</h2>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${role === 'seller' ? 'bg-yellow-600 text-white' : 'bg-blue-600 text-white'}`}>
+                    {role}
+                </span>
+            </div>
 
-            <input
-                type="text"
-                value={userId}
-                disabled
-                className="w-full bg-[#0f172a] p-3 rounded mb-3 text-gray-400"
-            />
+            <div className="mb-6">
+                <input
+                    type="text"
+                    value={userId}
+                    disabled
+                    className="w-full bg-[#0f172a] border border-gray-700 rounded-lg p-3 text-gray-400 cursor-not-allowed"
+                />
+            </div>
 
-            <input
-                type="number"
-                placeholder="Amount..."
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-[#0f172a] p-3 rounded mb-4 text-blue-400"
-            />
+            <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-[#0f172a] p-4 rounded-xl border border-gray-800">
+                    <p className="text-xs text-gray-400 mb-1">Balance</p>
+                    <p className="text-xl font-bold text-green-400">
+                        {loadingBalance ? '...' : `Rp ${balanceInfo?.balance?.toLocaleString() || 0}`}
+                    </p>
+                </div>
+                <div className="bg-[#0f172a] p-4 rounded-xl border border-gray-800">
+                    <p className="text-xs text-gray-400 mb-1">On Hold</p>
+                    <p className="text-xl font-bold text-yellow-500">
+                        {loadingBalance ? '...' : `Rp ${balanceInfo?.heldBalance?.toLocaleString() || 0}`}
+                    </p>
+                </div>
+            </div>
 
-            {/* Basic Wallet */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-                <button onClick={() => handleTransaction('topup')} className="bg-blue-600 p-3 rounded">
+            <div className="mb-6">
+                <input
+                    type="number"
+                    placeholder="Amount..."
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full bg-[#0f172a] border border-gray-700 rounded-lg p-4 text-white focus:outline-none focus:border-blue-500 transition-all"
+                />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-3">
+                <button
+                    onClick={() => handleTransaction('topup')}
+                    className="bg-blue-600 hover:bg-blue-500 p-3 rounded font-semibold transition"
+                >
                     TOPUP
                 </button>
-                <button onClick={() => handleTransaction('withdraw')} className="bg-red-600 p-3 rounded">
+                <button
+                    onClick={() => handleTransaction('withdraw')}
+                    className="bg-red-600 hover:bg-red-500 p-3 rounded font-semibold transition"
+                >
                     WITHDRAW
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-                <button onClick={handleWinAuction} className="bg-yellow-600 p-3 rounded">
-                    WIN AUCTION
-                </button>
-                <button onClick={handlePublishEvent} className="bg-purple-600 p-3 rounded">
-                    TEST EVENT
-                </button>
-            </div>
+            {role === 'seller' && (
+                <div className="mb-3">
+                    <button
+                        onClick={handleWinAuction}
+                        className="w-full bg-yellow-600 hover:bg-yellow-500 p-3 rounded font-semibold transition"
+                    >
+                        WIN AUCTION
+                    </button>
+                </div>
+            )}
+
+            <button
+                onClick={handlePublishEvent}
+                className="w-full bg-purple-600 hover:bg-purple-500 p-3 rounded font-semibold transition"
+            >
+                TEST EVENT
+            </button>
 
             {status.msg && (
-                <div className={`mt-4 p-3 rounded text-sm ${status.isError ? 'bg-red-500' : 'bg-green-500'}`}>
+                <div className={`mt-4 p-3 rounded text-sm font-medium ${status.isError ? 'bg-red-500' : 'bg-green-500'} text-white text-center`}>
                     {status.msg}
                 </div>
             )}

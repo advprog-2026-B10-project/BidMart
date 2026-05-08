@@ -24,6 +24,10 @@ public class Transaction {
 
     private String type;
 
+    @Column(unique = true)
+    private String idempotencyKey; 
+    private String status;
+
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -31,3 +35,4 @@ public class Transaction {
         createdAt = LocalDateTime.now();
     }
 }
+
