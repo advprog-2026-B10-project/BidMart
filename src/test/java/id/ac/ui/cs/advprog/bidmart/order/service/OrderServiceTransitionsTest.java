@@ -233,4 +233,63 @@ class OrderServiceTransitionsTest {
                 () -> service.receiveOrder(1L, "buyer@x"));
         verify(orderRepository, never()).save(any());
     }
+
+    // --- disputeOrder ---
+
+    @Test
+    void disputeOrder_buyerOnShipped_setsDisputedWithReason() {
+        Order existing = order(1L, OrderStatus.SHIPPED);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(orderRepository.save(any(Order.class))).thenAnswer(i -> i.getArgument(0));
+
+        Order result = service.disputeOrder(1L, "buyer@x", "Barang rusak saat tiba");
+
+        assertEquals(OrderStatus.DISPUTED, result.getStatus());
+        assertEquals("Barang rusak saat tiba", result.getDisputeReason());
+        assertNotNull(result.getDisputedAt());
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        verify(notificationService).send(
+                eq("seller@x"),
+                eq(NotificationType.ORDER_DISPUTED),
+                anyString(),
+                messageCaptor.capture(),
+                eq("1"));
+        assertTrue(messageCaptor.getValue().contains("Barang rusak saat tiba"));
+    }
+
+    @Test
+    void disputeOrder_rejectsNonBuyer() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order(1L, OrderStatus.SHIPPED)));
+
+        assertThrows(SecurityException.class,
+                () -> service.disputeOrder(1L, "seller@x", "x"));
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void disputeOrder_rejectsFromConfirmed() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order(1L, OrderStatus.CONFIRMED)));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.disputeOrder(1L, "buyer@x", "reason"));
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void disputeOrder_rejectsFromDelivered() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order(1L, OrderStatus.DELIVERED)));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.disputeOrder(1L, "buyer@x", "reason"));
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void disputeOrder_rejectsBlankReason() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order(1L, OrderStatus.SHIPPED)));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.disputeOrder(1L, "buyer@x", "   "));
+        verify(orderRepository, never()).save(any());
+    }
 }

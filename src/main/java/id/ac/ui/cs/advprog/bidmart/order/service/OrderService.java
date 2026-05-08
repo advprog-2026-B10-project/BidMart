@@ -161,4 +161,32 @@ public class OrderService {
                 String.valueOf(saved.getId()));
         return saved;
     }
+
+    @Transactional
+    public Order disputeOrder(Long orderId, String userId, String reason) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NoSuchElementException("Order not found: " + orderId));
+        if (!order.getBuyerId().equals(userId)) {
+            throw new SecurityException("Only the buyer can dispute the order");
+        }
+        if (order.getStatus() != OrderStatus.SHIPPED) {
+            throw new IllegalStateException(
+                    "Cannot dispute order from status " + order.getStatus());
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Dispute reason must not be blank");
+        }
+        order.setStatus(OrderStatus.DISPUTED);
+        order.setDisputeReason(reason);
+        order.setDisputedAt(LocalDateTime.now());
+        Order saved = orderRepository.save(order);
+
+        notificationService.send(
+                saved.getSellerId(),
+                NotificationType.ORDER_DISPUTED,
+                "Pesanan Disengketakan",
+                "Pembeli mengajukan sengketa pesanan #" + saved.getId() + ": " + reason,
+                String.valueOf(saved.getId()));
+        return saved;
+    }
 }
