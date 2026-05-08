@@ -10,13 +10,13 @@ import id.ac.ui.cs.advprog.bidmart.auth.dto.RefreshTokenRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.MfaToggleRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.MfaStatusResponse;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.MfaVerifyRequest;
-import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
+import id.ac.ui.cs.advprog.bidmart.auth.dto.AdminSessionRevokeResponse;
+import id.ac.ui.cs.advprog.bidmart.auth.dto.UpdateUserRoleRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-    private final UserRepository userRepository;
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
@@ -56,11 +55,21 @@ public class AuthController {
 
     @GetMapping("/users")
     public ResponseEntity<List<AdminUserResponse>> getAllUsers() {
-        List<AdminUserResponse> users = userRepository.findAll()
-                .stream()
-                .map(AdminUserResponse::fromUser)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(users);
+        return ResponseEntity.ok(authService.getAdminUsers());
+    }
+
+    @PostMapping("/admin/users/{id}/sessions/revoke")
+    public ResponseEntity<AdminSessionRevokeResponse> revokeUserSessions(@PathVariable Long id) {
+        return ResponseEntity.ok(authService.revokeUserSessions(id));
+    }
+
+    @PatchMapping("/admin/users/{id}/role")
+    public ResponseEntity<AdminUserResponse> updateUserRole(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRoleRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(authService.updateUserRole(id, request.getRole(), authentication.getName()));
     }
 
     @GetMapping("/profile")

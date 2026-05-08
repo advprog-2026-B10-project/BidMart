@@ -10,9 +10,11 @@ import id.ac.ui.cs.advprog.bidmart.auth.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,9 @@ public class AuthService {
     private final MfaTotpService mfaTotpService;
     private final EmailService emailService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    @Value("${app.auth.max-concurrent-sessions:3}")
+    private int maxConcurrentSessions;
 
     public void register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -86,26 +91,7 @@ public class AuthService {
                     .build();
         }
 
-        String accessToken = jwtService.generateToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
-
-        // Save refresh token to database
-        RefreshToken token = RefreshToken.builder()
-                .token(refreshToken)
-                .email(user.getEmail())
-                .expiresAt(Instant.now().plusSeconds(7 * 24 * 60 * 60))
-                .revoked(false)
-                .build();
-        refreshTokenRepository.save(token);
-
-        return AuthResponse.builder()
-                .token(accessToken)
-                .refreshToken(refreshToken)
-                .expiresIn(jwtService.getAccessTokenExpiration() / 1000)
-                .email(user.getEmail())
-                .role(user.getRole().name())
-            .mfaRequired(false)
-                .build();
+        return issueSessionTokens(user);
     }
 
     public AuthResponse refreshTokens(String refreshTokenValue) {
@@ -156,25 +142,7 @@ public class AuthService {
             throw new AuthException(HttpStatus.UNAUTHORIZED, "Invalid MFA code");
         }
 
-        String accessToken = jwtService.generateToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
-
-        RefreshToken token = RefreshToken.builder()
-                .token(refreshToken)
-                .email(user.getEmail())
-                .expiresAt(Instant.now().plusSeconds(7 * 24 * 60 * 60))
-                .revoked(false)
-                .build();
-        refreshTokenRepository.save(token);
-
-        return AuthResponse.builder()
-                .token(accessToken)
-                .refreshToken(refreshToken)
-                .expiresIn(jwtService.getAccessTokenExpiration() / 1000)
-                .email(user.getEmail())
-                .role(user.getRole().name())
-                .mfaRequired(false)
-                .build();
+        return issueSessionTokens(user);
     }
 
     public MfaStatusResponse toggleMfa(String email, boolean enabled) {
@@ -199,6 +167,51 @@ public class AuthService {
                 .secret(enabled ? user.getMfaSecret() : null)
                 .otpauthUri(enabled ? mfaTotpService.buildOtpAuthUri(user.getEmail(), user.getMfaSecret()) : null)
                 .build();
+    }
+
+    public List<AdminUserResponse> getAdminUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(user -> AdminUserResponse.fromUser(
+                        user,
+                        refreshTokenRepository.countActiveSessionsByEmail(user.getEmail())
+                ))
+                .toList();
+    }
+
+    @Transactional
+    public AdminSessionRevokeResponse revokeUserSessions(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
+
+        int revoked = refreshTokenRepository.revokeActiveSessionsByEmail(user.getEmail());
+        return AdminSessionRevokeResponse.builder()
+                .userId(userId)
+                .revokedSessions(revoked)
+                .message("Revoked active sessions successfully")
+                .build();
+    }
+
+    @Transactional
+    public AdminUserResponse updateUserRole(Long userId, String roleValue, String actorEmail) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
+
+        Role newRole;
+        try {
+            newRole = Role.valueOf(roleValue.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new AuthException(HttpStatus.BAD_REQUEST, "Invalid role value");
+        }
+
+        if (user.getEmail().equalsIgnoreCase(actorEmail) && newRole != Role.ADMIN) {
+            throw new AuthException(HttpStatus.BAD_REQUEST, "Admin cannot demote themselves");
+        }
+
+        user.setRole(newRole);
+        userRepository.save(user);
+
+        return AdminUserResponse.fromUser(user, refreshTokenRepository.countActiveSessionsByEmail(user.getEmail()));
     }
 
     @Transactional
@@ -235,5 +248,44 @@ public class AuthService {
 
         userRepository.save(user);
         return ProfileResponse.fromUser(user);
+    }
+
+    private AuthResponse issueSessionTokens(User user) {
+        enforceConcurrentSessionLimit(user.getEmail());
+
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        RefreshToken token = RefreshToken.builder()
+                .token(refreshToken)
+                .email(user.getEmail())
+                .expiresAt(Instant.now().plusSeconds(7 * 24 * 60 * 60))
+                .revoked(false)
+                .build();
+        refreshTokenRepository.save(token);
+
+        return AuthResponse.builder()
+                .token(accessToken)
+                .refreshToken(refreshToken)
+                .expiresIn(jwtService.getAccessTokenExpiration() / 1000)
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .mfaRequired(false)
+                .build();
+    }
+
+    private void enforceConcurrentSessionLimit(String email) {
+        List<RefreshToken> activeSessions = refreshTokenRepository.findActiveSessionsByEmail(email);
+        int overflow = activeSessions.size() - maxConcurrentSessions + 1;
+
+        if (overflow <= 0) {
+            return;
+        }
+
+        for (int i = 0; i < overflow && i < activeSessions.size(); i++) {
+            RefreshToken token = activeSessions.get(i);
+            token.setRevoked(true);
+            refreshTokenRepository.save(token);
+        }
     }
 }

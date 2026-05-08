@@ -3,6 +3,7 @@ package id.ac.ui.cs.advprog.bidmart.auth;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.Role;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.User;
+import id.ac.ui.cs.advprog.bidmart.auth.repository.RefreshTokenRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.service.MfaTotpService;
 import id.ac.ui.cs.advprog.bidmart.auth.service.EmailService;
@@ -14,7 +15,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -29,7 +29,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@TestPropertySource(locations = "classpath:application-test.properties")
 class AuthControllerIntegrationTest {
 
     @Autowired
@@ -43,6 +42,9 @@ class AuthControllerIntegrationTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+        @Autowired
+        private RefreshTokenRepository refreshTokenRepository;
 
         @Autowired
         private MfaTotpService mfaTotpService;
@@ -500,5 +502,105 @@ class AuthControllerIntegrationTest {
                         .andExpect(jsonPath("$.token").exists())
                         .andExpect(jsonPath("$.refreshToken").exists())
                         .andExpect(jsonPath("$.mfaRequired").value(false));
+        }
+
+        @Test
+        void loginCapsActiveConcurrentSessionsToConfiguredLimit() throws Exception {
+                User user = User.builder()
+                                .email("sessions@example.com")
+                                .password(passwordEncoder.encode("Password!1"))
+                                .displayName("Session User")
+                                .role(Role.BUYER)
+                                .isEnabled(true)
+                                .build();
+                userRepository.save(user);
+
+                String loginPayload = """
+                        {
+                            "email": "sessions@example.com",
+                            "password": "Password!1"
+                        }
+                        """;
+
+                for (int i = 0; i < 4; i++) {
+                        mockMvc.perform(post("/api/auth/login")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(loginPayload))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.token").exists())
+                                .andExpect(jsonPath("$.refreshToken").exists());
+                }
+
+                long activeSessions = refreshTokenRepository.countActiveSessionsByEmail("sessions@example.com");
+                org.junit.jupiter.api.Assertions.assertEquals(3, activeSessions);
+        }
+
+        @Test
+        void adminCanRevokeSessionsAndUpdateRole() throws Exception {
+                User admin = User.builder()
+                                .email("admincontrol@example.com")
+                                .password(passwordEncoder.encode("AdminPass!1"))
+                                .displayName("Admin")
+                                .role(Role.ADMIN)
+                                .isEnabled(true)
+                                .build();
+                userRepository.save(admin);
+
+                User target = User.builder()
+                                .email("target@example.com")
+                                .password(passwordEncoder.encode("Password!1"))
+                                .displayName("Target")
+                                .role(Role.BUYER)
+                                .isEnabled(true)
+                                .build();
+                target = userRepository.save(target);
+
+                String targetLogin = """
+                        {
+                            "email": "target@example.com",
+                            "password": "Password!1"
+                        }
+                        """;
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(targetLogin))
+                        .andExpect(status().isOk());
+
+                String adminLogin = """
+                        {
+                            "email": "admincontrol@example.com",
+                            "password": "AdminPass!1"
+                        }
+                        """;
+                String adminLoginBody = mockMvc.perform(post("/api/auth/login")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(adminLogin))
+                                .andExpect(status().isOk())
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString();
+
+                String adminToken = objectMapper.readTree(adminLoginBody).get("token").asText();
+
+                mockMvc.perform(post("/api/auth/admin/users/" + target.getId() + "/sessions/revoke")
+                                .header("Authorization", "Bearer " + adminToken))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.revokedSessions").value(1));
+
+                String rolePayload = """
+                        {
+                            "role": "SELLER"
+                        }
+                        """;
+
+                mockMvc.perform(patch("/api/auth/admin/users/" + target.getId() + "/role")
+                                .header("Authorization", "Bearer " + adminToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(rolePayload))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.role").value("SELLER"));
+
+                User updatedTarget = userRepository.findById(target.getId()).orElseThrow();
+                org.junit.jupiter.api.Assertions.assertEquals(Role.SELLER, updatedTarget.getRole());
         }
 }
