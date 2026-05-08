@@ -195,4 +195,42 @@ class OrderServiceTransitionsTest {
                 () -> service.shipOrder(1L, "seller@x", "  "));
         verify(orderRepository, never()).save(any());
     }
+
+    // --- receiveOrder ---
+
+    @Test
+    void receiveOrder_buyerOnShipped_setsDelivered() {
+        Order existing = order(1L, OrderStatus.SHIPPED);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(orderRepository.save(any(Order.class))).thenAnswer(i -> i.getArgument(0));
+
+        Order result = service.receiveOrder(1L, "buyer@x");
+
+        assertEquals(OrderStatus.DELIVERED, result.getStatus());
+        assertNotNull(result.getDeliveredAt());
+        verify(notificationService).send(
+                eq("seller@x"),
+                eq(NotificationType.ORDER_DELIVERED),
+                anyString(),
+                anyString(),
+                eq("1"));
+    }
+
+    @Test
+    void receiveOrder_rejectsNonBuyer() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order(1L, OrderStatus.SHIPPED)));
+
+        assertThrows(SecurityException.class,
+                () -> service.receiveOrder(1L, "seller@x"));
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void receiveOrder_rejectsFromConfirmed() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order(1L, OrderStatus.CONFIRMED)));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.receiveOrder(1L, "buyer@x"));
+        verify(orderRepository, never()).save(any());
+    }
 }

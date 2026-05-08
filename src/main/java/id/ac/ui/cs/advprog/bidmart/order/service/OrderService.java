@@ -137,4 +137,28 @@ public class OrderService {
                 String.valueOf(saved.getId()));
         return saved;
     }
+
+    @Transactional
+    public Order receiveOrder(Long orderId, String userId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NoSuchElementException("Order not found: " + orderId));
+        if (!order.getBuyerId().equals(userId)) {
+            throw new SecurityException("Only the buyer can confirm receipt");
+        }
+        if (order.getStatus() != OrderStatus.SHIPPED) {
+            throw new IllegalStateException(
+                    "Cannot confirm receipt from status " + order.getStatus());
+        }
+        order.setStatus(OrderStatus.DELIVERED);
+        order.setDeliveredAt(LocalDateTime.now());
+        Order saved = orderRepository.save(order);
+
+        notificationService.send(
+                saved.getSellerId(),
+                NotificationType.ORDER_DELIVERED,
+                "Pesanan Diterima",
+                "Pembeli mengonfirmasi penerimaan pesanan #" + saved.getId() + ".",
+                String.valueOf(saved.getId()));
+        return saved;
+    }
 }
