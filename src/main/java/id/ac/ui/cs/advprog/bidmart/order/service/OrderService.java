@@ -57,6 +57,10 @@ public class OrderService {
         return orderRepository.findByBuyerId(buyerId);
     }
 
+    public List<Order> findBySeller(String sellerId) {
+        return orderRepository.findBySellerId(sellerId);
+    }
+
     public Optional<Order> findById(Long id) {
         return orderRepository.findById(id);
     }
