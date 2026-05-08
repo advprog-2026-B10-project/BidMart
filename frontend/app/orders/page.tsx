@@ -109,6 +109,12 @@ export default function OrdersPage() {
           </div>
           <div className="flex gap-3">
             <Link
+              href="/orders/sales"
+              className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-sm font-medium transition"
+            >
+              Penjualan Saya
+            </Link>
+            <Link
               href="/notifications"
               className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-sm font-medium transition"
             >
@@ -159,7 +165,8 @@ export default function OrdersPage() {
                 {orders.map((o) => (
                   <tr
                     key={o.id}
-                    className="border-t border-gray-800 hover:bg-gray-800/60 transition"
+                    onClick={() => router.push(`/orders/${o.id}`)}
+                    className="border-t border-gray-800 hover:bg-gray-800/60 transition cursor-pointer"
                   >
                     <td className="px-4 py-3 font-mono text-gray-300">#{o.id}</td>
                     <td className="px-4 py-3 text-gray-300">#{o.auctionId}</td>
