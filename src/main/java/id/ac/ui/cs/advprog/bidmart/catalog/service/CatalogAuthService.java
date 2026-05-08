@@ -6,7 +6,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 
 @Service
-public class AuthService {
+public class CatalogAuthService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final String AUTH_URL = "http://auth-service-url/api/auth/profile/";
 

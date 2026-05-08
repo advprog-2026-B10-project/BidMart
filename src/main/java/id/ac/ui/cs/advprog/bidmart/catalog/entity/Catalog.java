@@ -35,6 +35,8 @@ public class Catalog {
 
     private Integer durasiLelang;
 
+    private Double hargaSekarang;
+
     public Catalog() {}
 
     public Catalog(String judul, String deskripsi, String gambar, Category category, Double hargaAwal, Double hargaCadangan, Integer durasiLelang) {

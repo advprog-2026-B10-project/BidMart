@@ -28,6 +28,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.postgresql:postgresql")
+	implementation("org.springframework.boot:spring-boot-starter-amqp")
 	implementation ("org.springframework.boot:spring-boot-starter-security")
 	implementation ("io.jsonwebtoken:jjwt-api:0.12.5")
 	implementation ("org.springframework.boot:spring-boot-starter-validation")
