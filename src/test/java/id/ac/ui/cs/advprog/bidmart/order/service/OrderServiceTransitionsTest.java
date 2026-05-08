@@ -130,4 +130,69 @@ class OrderServiceTransitionsTest {
                 () -> service.confirmOrder(1L, "seller@x"));
         verify(orderRepository, never()).save(any());
     }
+
+    // --- shipOrder ---
+
+    @Test
+    void shipOrder_sellerOnConfirmed_withAddressAndTracking_setsShipped() {
+        Order existing = order(1L, OrderStatus.CONFIRMED);
+        existing.setShippingAddress("Jl. Mawar No. 1");
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(orderRepository.save(any(Order.class))).thenAnswer(i -> i.getArgument(0));
+
+        Order result = service.shipOrder(1L, "seller@x", "JNE12345");
+
+        assertEquals(OrderStatus.SHIPPED, result.getStatus());
+        assertEquals("JNE12345", result.getTrackingNumber());
+        assertNotNull(result.getShippedAt());
+        verify(notificationService).send(
+                eq("buyer@x"),
+                eq(NotificationType.ORDER_SHIPPED),
+                anyString(),
+                anyString(),
+                eq("1"));
+    }
+
+    @Test
+    void shipOrder_rejectsNonSeller() {
+        Order existing = order(1L, OrderStatus.CONFIRMED);
+        existing.setShippingAddress("Jl. Mawar No. 1");
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+        assertThrows(SecurityException.class,
+                () -> service.shipOrder(1L, "buyer@x", "JNE12345"));
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void shipOrder_rejectsFromPending() {
+        Order existing = order(1L, OrderStatus.PENDING);
+        existing.setShippingAddress("Jl. Mawar No. 1");
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.shipOrder(1L, "seller@x", "JNE12345"));
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void shipOrder_rejectsWhenShippingAddressMissing() {
+        Order existing = order(1L, OrderStatus.CONFIRMED);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.shipOrder(1L, "seller@x", "JNE12345"));
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void shipOrder_rejectsBlankTrackingNumber() {
+        Order existing = order(1L, OrderStatus.CONFIRMED);
+        existing.setShippingAddress("Jl. Mawar No. 1");
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.shipOrder(1L, "seller@x", "  "));
+        verify(orderRepository, never()).save(any());
+    }
 }

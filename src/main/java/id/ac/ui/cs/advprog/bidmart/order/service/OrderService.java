@@ -105,4 +105,36 @@ public class OrderService {
                 String.valueOf(saved.getId()));
         return saved;
     }
+
+    @Transactional
+    public Order shipOrder(Long orderId, String userId, String trackingNumber) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NoSuchElementException("Order not found: " + orderId));
+        if (!order.getSellerId().equals(userId)) {
+            throw new SecurityException("Only the seller can mark the order as shipped");
+        }
+        if (order.getStatus() != OrderStatus.CONFIRMED) {
+            throw new IllegalStateException(
+                    "Cannot ship order from status " + order.getStatus());
+        }
+        if (order.getShippingAddress() == null || order.getShippingAddress().isBlank()) {
+            throw new IllegalArgumentException(
+                    "Cannot ship order without a shipping address");
+        }
+        if (trackingNumber == null || trackingNumber.isBlank()) {
+            throw new IllegalArgumentException("Tracking number must not be blank");
+        }
+        order.setStatus(OrderStatus.SHIPPED);
+        order.setTrackingNumber(trackingNumber);
+        order.setShippedAt(LocalDateTime.now());
+        Order saved = orderRepository.save(order);
+
+        notificationService.send(
+                saved.getBuyerId(),
+                NotificationType.ORDER_SHIPPED,
+                "Pesanan Dikirim",
+                "Pesanan #" + saved.getId() + " dikirim. Resi: " + trackingNumber + ".",
+                String.valueOf(saved.getId()));
+        return saved;
+    }
 }
