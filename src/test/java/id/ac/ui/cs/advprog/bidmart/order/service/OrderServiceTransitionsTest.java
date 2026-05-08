@@ -91,4 +91,43 @@ class OrderServiceTransitionsTest {
         assertThrows(NoSuchElementException.class,
                 () -> service.setShippingAddress(99L, "buyer@x", "x"));
     }
+
+    // --- confirmOrder ---
+
+    @Test
+    void confirmOrder_sellerOnPending_setsConfirmed() {
+        Order existing = order(1L, OrderStatus.PENDING);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(orderRepository.save(any(Order.class))).thenAnswer(i -> i.getArgument(0));
+
+        Order result = service.confirmOrder(1L, "seller@x");
+
+        assertEquals(OrderStatus.CONFIRMED, result.getStatus());
+        assertNotNull(result.getConfirmedAt());
+        verify(notificationService).send(
+                eq("buyer@x"),
+                eq(NotificationType.ORDER_CONFIRMED),
+                anyString(),
+                anyString(),
+                eq("1"));
+    }
+
+    @Test
+    void confirmOrder_rejectsNonSeller() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order(1L, OrderStatus.PENDING)));
+
+        assertThrows(SecurityException.class,
+                () -> service.confirmOrder(1L, "buyer@x"));
+        verify(orderRepository, never()).save(any());
+        verify(notificationService, never()).send(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void confirmOrder_rejectsAlreadyConfirmed() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order(1L, OrderStatus.CONFIRMED)));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.confirmOrder(1L, "seller@x"));
+        verify(orderRepository, never()).save(any());
+    }
 }

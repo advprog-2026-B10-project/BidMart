@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -79,5 +80,29 @@ public class OrderService {
         }
         order.setShippingAddress(address);
         return orderRepository.save(order);
+    }
+
+    @Transactional
+    public Order confirmOrder(Long orderId, String userId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NoSuchElementException("Order not found: " + orderId));
+        if (!order.getSellerId().equals(userId)) {
+            throw new SecurityException("Only the seller can confirm the order");
+        }
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new IllegalStateException(
+                    "Cannot confirm order from status " + order.getStatus());
+        }
+        order.setStatus(OrderStatus.CONFIRMED);
+        order.setConfirmedAt(LocalDateTime.now());
+        Order saved = orderRepository.save(order);
+
+        notificationService.send(
+                saved.getBuyerId(),
+                NotificationType.ORDER_CONFIRMED,
+                "Pesanan Dikonfirmasi",
+                "Penjual telah mengonfirmasi pesanan #" + saved.getId() + ".",
+                String.valueOf(saved.getId()));
+        return saved;
     }
 }
