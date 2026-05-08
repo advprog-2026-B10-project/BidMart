@@ -39,4 +39,7 @@ public class Auction {
 
     @Column(nullable = false)
     private String sellerId;
+
+    @Version
+    private Long version;
 }
