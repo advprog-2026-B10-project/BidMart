@@ -41,11 +41,26 @@ public class Order {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "shipping_address")
+    @Column(name = "shipping_address", length = 500)
     private String shippingAddress;
 
-    @Column(name = "tracking_number")
+    @Column(name = "tracking_number", length = 100)
     private String trackingNumber;
+
+    @Column(name = "dispute_reason", length = 1000)
+    private String disputeReason;
+
+    @Column(name = "confirmed_at")
+    private LocalDateTime confirmedAt;
+
+    @Column(name = "shipped_at")
+    private LocalDateTime shippedAt;
+
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
+
+    @Column(name = "disputed_at")
+    private LocalDateTime disputedAt;
 
     @PrePersist
     protected void onCreate() {

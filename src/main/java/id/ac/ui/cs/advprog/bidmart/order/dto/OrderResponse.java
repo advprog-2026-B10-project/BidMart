@@ -17,14 +17,30 @@ public class OrderResponse {
     private String status;
     private String shippingAddress;
     private String trackingNumber;
+    private String disputeReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime confirmedAt;
+    private LocalDateTime shippedAt;
+    private LocalDateTime deliveredAt;
+    private LocalDateTime disputedAt;
 
     public static OrderResponse from(Order o) {
         return new OrderResponse(
-                o.getId(), o.getAuctionId(), o.getBuyerId(), o.getSellerId(),
-                o.getTotalAmount(), o.getStatus().name(),
-                o.getShippingAddress(), o.getTrackingNumber(),
-                o.getCreatedAt(), o.getUpdatedAt());
+                o.getId(),
+                o.getAuctionId(),
+                o.getBuyerId(),
+                o.getSellerId(),
+                o.getTotalAmount(),
+                o.getStatus().name(),
+                o.getShippingAddress(),
+                o.getTrackingNumber(),
+                o.getDisputeReason(),
+                o.getCreatedAt(),
+                o.getUpdatedAt(),
+                o.getConfirmedAt(),
+                o.getShippedAt(),
+                o.getDeliveredAt(),
+                o.getDisputedAt());
     }
 }

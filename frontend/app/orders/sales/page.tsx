@@ -32,12 +32,9 @@ function authHeaders(): Record<string, string> {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return '-';
+  if (!iso) return '—';
   try {
-    return new Date(iso).toLocaleString('id-ID', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    });
+    return new Date(iso).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
   } catch {
     return iso;
   }
@@ -53,24 +50,17 @@ function formatCurrency(amount: number): string {
 
 function statusColor(status: string): string {
   switch (status) {
-    case 'PENDING':
-      return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40';
-    case 'CONFIRMED':
-      return 'bg-blue-500/20 text-blue-300 border-blue-500/40';
-    case 'SHIPPED':
-      return 'bg-purple-500/20 text-purple-300 border-purple-500/40';
-    case 'DELIVERED':
-      return 'bg-green-500/20 text-green-300 border-green-500/40';
-    case 'DISPUTED':
-      return 'bg-orange-500/20 text-orange-300 border-orange-500/40';
-    case 'CANCELLED':
-      return 'bg-red-500/20 text-red-300 border-red-500/40';
-    default:
-      return 'bg-gray-500/20 text-gray-300 border-gray-500/40';
+    case 'PENDING': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40';
+    case 'CONFIRMED': return 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+    case 'SHIPPED': return 'bg-purple-500/20 text-purple-300 border-purple-500/40';
+    case 'DELIVERED': return 'bg-green-500/20 text-green-300 border-green-500/40';
+    case 'DISPUTED': return 'bg-orange-500/20 text-orange-300 border-orange-500/40';
+    case 'CANCELLED': return 'bg-red-500/20 text-red-300 border-red-500/40';
+    default: return 'bg-gray-500/20 text-gray-300 border-gray-500/40';
   }
 }
 
-export default function OrdersPage() {
+export default function OrderSalesPage() {
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<UiStatus>({ type: '', message: '' });
@@ -82,20 +72,19 @@ export default function OrdersPage() {
       router.push('/login');
       return;
     }
-    loadOrders();
+    load();
   }, [router]);
 
-  const loadOrders = async () => {
+  const load = async () => {
     setLoading(true);
     setStatus({ type: '', message: '' });
     try {
-      const res = await fetch(`${API_BASE}/orders/me`, { headers: authHeaders() });
-      if (!res.ok) throw new Error('Gagal memuat pesanan');
+      const res = await fetch(`${API_BASE}/orders/sales`, { headers: authHeaders() });
+      if (!res.ok) throw new Error('Gagal memuat penjualan');
       const data = (await res.json()) as OrderItem[];
       setOrders(data);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unexpected error';
-      setStatus({ type: 'error', message: msg });
+      setStatus({ type: 'error', message: err instanceof Error ? err.message : 'Unexpected error' });
     } finally {
       setLoading(false);
     }
@@ -106,51 +95,25 @@ export default function OrdersPage() {
       <div className="max-w-4xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-blue-400">Pesanan Saya</h1>
-            <p className="text-gray-400">Daftar pesanan dari lelang yang kamu menangkan.</p>
+            <h1 className="text-3xl font-bold text-blue-400">Penjualan Saya</h1>
+            <p className="text-gray-400">Daftar pesanan dari lelang yang kamu jual.</p>
           </div>
           <div className="flex gap-3">
-            <Link
-              href="/orders/sales"
-              className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-sm font-medium transition"
-            >
-              Penjualan Saya
-            </Link>
-            <Link
-              href="/notifications"
-              className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-sm font-medium transition"
-            >
-              Notifikasi
-            </Link>
-            <Link
-              href="/"
-              className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-sm font-medium transition"
-            >
-              Kembali
-            </Link>
+            <Link href="/orders" className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-sm font-medium transition">Pesanan Saya</Link>
+            <Link href="/" className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-sm font-medium transition">Kembali</Link>
           </div>
         </div>
 
         {status.message && (
-          <div
-            className={`mb-6 p-3 rounded-lg border text-sm ${
-              status.type === 'error'
-                ? 'bg-red-500/10 text-red-400 border-red-500/40'
-                : 'bg-green-500/10 text-green-400 border-green-500/40'
-            }`}
-          >
-            <p>{status.message}</p>
+          <div className={`mb-6 p-3 rounded-lg border text-sm ${status.type === 'error' ? 'bg-red-500/10 text-red-400 border-red-500/40' : 'bg-green-500/10 text-green-400 border-green-500/40'}`}>
+            {status.message}
           </div>
         )}
 
         {loading ? (
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-8 text-center text-gray-400">
-            Memuat pesanan...
-          </div>
+          <div className="bg-gray-800 border border-gray-700 rounded-xl p-8 text-center text-gray-400">Memuat penjualan...</div>
         ) : orders.length === 0 ? (
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-8 text-center text-gray-400">
-            Belum ada pesanan.
-          </div>
+          <div className="bg-gray-800 border border-gray-700 rounded-xl p-8 text-center text-gray-400">Belum ada penjualan.</div>
         ) : (
           <div className="overflow-hidden rounded-xl border border-gray-700">
             <table className="w-full text-sm">
@@ -158,6 +121,7 @@ export default function OrdersPage() {
                 <tr>
                   <th className="px-4 py-3 text-left">Order</th>
                   <th className="px-4 py-3 text-left">Lelang</th>
+                  <th className="px-4 py-3 text-left">Buyer</th>
                   <th className="px-4 py-3 text-left">Total</th>
                   <th className="px-4 py-3 text-left">Status</th>
                   <th className="px-4 py-3 text-left">Dibuat</th>
@@ -172,15 +136,10 @@ export default function OrdersPage() {
                   >
                     <td className="px-4 py-3 font-mono text-gray-300">#{o.id}</td>
                     <td className="px-4 py-3 text-gray-300">#{o.auctionId}</td>
-                    <td className="px-4 py-3 font-semibold text-white">
-                      {formatCurrency(o.totalAmount)}
-                    </td>
+                    <td className="px-4 py-3 text-gray-300">{o.buyerId}</td>
+                    <td className="px-4 py-3 font-semibold text-white">{formatCurrency(o.totalAmount)}</td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`text-xs border px-2 py-1 rounded-full ${statusColor(o.status)}`}
-                      >
-                        {o.status}
-                      </span>
+                      <span className={`text-xs border px-2 py-1 rounded-full ${statusColor(o.status)}`}>{o.status}</span>
                     </td>
                     <td className="px-4 py-3 text-gray-400">{formatDate(o.createdAt)}</td>
                   </tr>
