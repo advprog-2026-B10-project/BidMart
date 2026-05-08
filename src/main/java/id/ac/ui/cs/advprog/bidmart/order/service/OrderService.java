@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Service
@@ -63,5 +64,20 @@ public class OrderService {
 
     public Optional<Order> findById(Long id) {
         return orderRepository.findById(id);
+    }
+
+    @Transactional
+    public Order setShippingAddress(Long orderId, String userId, String address) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NoSuchElementException("Order not found: " + orderId));
+        if (!order.getBuyerId().equals(userId)) {
+            throw new SecurityException("Only the buyer can set the shipping address");
+        }
+        if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.CONFIRMED) {
+            throw new IllegalStateException(
+                    "Cannot set shipping address when order is " + order.getStatus());
+        }
+        order.setShippingAddress(address);
+        return orderRepository.save(order);
     }
 }
