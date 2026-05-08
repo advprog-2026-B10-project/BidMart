@@ -4,11 +4,14 @@ import id.ac.ui.cs.advprog.bidmart.bidding.dto.CreateAuctionRequest;
 import id.ac.ui.cs.advprog.bidmart.bidding.entity.Auction;
 import id.ac.ui.cs.advprog.bidmart.bidding.entity.AuctionStatus;
 import id.ac.ui.cs.advprog.bidmart.bidding.entity.Bid;
+import id.ac.ui.cs.advprog.bidmart.bidding.event.AuctionEndedEvent;
+import id.ac.ui.cs.advprog.bidmart.bidding.event.BidPlacedEvent;
 import id.ac.ui.cs.advprog.bidmart.bidding.repository.AuctionRepository;
 import id.ac.ui.cs.advprog.bidmart.bidding.repository.BidRepository;
 import id.ac.ui.cs.advprog.bidmart.wallet.service.WalletService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +31,9 @@ public class BiddingService {
 
     @Autowired
     private WalletService walletService;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     public Auction createAuction(CreateAuctionRequest request) {
 
@@ -97,6 +103,7 @@ public class BiddingService {
 
         auctionRepository.save(auction);
 
+        eventPublisher.publishEvent(new BidPlacedEvent(this, auctionId, userId, amount));
         return "Bid berhasil, saldo ditahan";
     }
 
@@ -108,15 +115,36 @@ public class BiddingService {
         if (highestBid.isEmpty()) {
             auction.setStatus(AuctionStatus.UNSOLD);
             auctionRepository.save(auction);
+            eventPublisher.publishEvent(new AuctionEndedEvent(
+                this,
+                auction.getId(),
+                null,
+                0.0,
+                AuctionStatus.UNSOLD
+            ));
             return "Lelang berakhir tanpa pemenang";
         }
 
         if (highestBid.get().getAmount() >= auction.getReservePrice()) {
             auction.setStatus(AuctionStatus.WON);
             walletService.deductHeldBalance(highestBid.get().getBuyerId(), highestBid.get().getAmount());
+            eventPublisher.publishEvent(new AuctionEndedEvent(
+                this,
+                auction.getId(),
+                highestBid.get().getBuyerId(),
+                highestBid.get().getAmount(),
+                AuctionStatus.WON
+            ));
         } else {
             auction.setStatus(AuctionStatus.UNSOLD);
             walletService.releaseHeldBalance(highestBid.get().getBuyerId(), highestBid.get().getAmount());
+            eventPublisher.publishEvent(new AuctionEndedEvent(
+                this,
+                auction.getId(),
+                null,
+                highestBid.isPresent() ? highestBid.get().getAmount() : 0.0,
+                AuctionStatus.UNSOLD
+            ));
         }
 
         auctionRepository.save(auction);
