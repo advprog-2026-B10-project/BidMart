@@ -3,24 +3,19 @@ package id.ac.ui.cs.advprog.bidmart.bidding.service;
 import id.ac.ui.cs.advprog.bidmart.bidding.dto.CreateAuctionRequest;
 import id.ac.ui.cs.advprog.bidmart.bidding.entity.Auction;
 import id.ac.ui.cs.advprog.bidmart.bidding.entity.AuctionStatus;
-import id.ac.ui.cs.advprog.bidmart.bidding.entity.Bid;
-import id.ac.ui.cs.advprog.bidmart.bidding.event.AuctionEndedEvent;
-import id.ac.ui.cs.advprog.bidmart.bidding.event.BidPlacedEvent;
+import id.ac.ui.cs.advprog.bidmart.bidding.entity.AuctionType;
 import id.ac.ui.cs.advprog.bidmart.bidding.repository.AuctionRepository;
-import id.ac.ui.cs.advprog.bidmart.bidding.repository.BidRepository;
-import id.ac.ui.cs.advprog.bidmart.wallet.service.WalletService;
+import id.ac.ui.cs.advprog.bidmart.bidding.strategy.AuctionStrategy;
+import id.ac.ui.cs.advprog.bidmart.bidding.strategy.AuctionStrategyFactory;
 import jakarta.persistence.OptimisticLockException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class BiddingService {
@@ -29,13 +24,7 @@ public class BiddingService {
     private AuctionRepository auctionRepository;
 
     @Autowired
-    private BidRepository bidRepository;
-
-    @Autowired
-    private WalletService walletService;
-
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
+    private AuctionStrategyFactory strategyFactory;
 
     public Auction createAuction(CreateAuctionRequest request) {
 
@@ -52,110 +41,31 @@ public class BiddingService {
 
         auction.setSellerId(request.getSellerId());
 
+        auction.setType(request.getType() != null ? request.getType() : AuctionType.ENGLISH);
         return auctionRepository.save(auction);
     }
 
     public String placeBid(String userId, Long auctionId, Double amount) {
-
         try {
             Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new RuntimeException("Auction tidak ditemukan"));
+                    .orElseThrow(() -> new RuntimeException("Auction tidak ditemukan"));
 
             if (!auction.getStatus().equals(AuctionStatus.ACTIVE) &&
                     !auction.getStatus().equals(AuctionStatus.EXTENDED)) {
                 return "Auction tidak dalam status aktif";
             }
 
-            if (LocalDateTime.now().isAfter(auction.getEndTime())) {
-                return "Auction sudah berakhir";
-            }
+            AuctionStrategy strategy = strategyFactory.getStrategy(auction.getType());
+            return strategy.placeBid(auction, userId, amount);
 
-            Double highestBid = auction.getStartingPrice();
-            Bid previousHighest = null;
-
-            if (!auction.getBids().isEmpty()) {
-                for (Bid bid : auction.getBids()) {
-                    if (bid.getAmount() > highestBid) {
-                        highestBid = bid.getAmount();
-                        previousHighest = bid;
-                    }
-                }
-            }
-
-            if (amount <= highestBid) {
-                return "Bid harus lebih tinggi dari penawaran tertinggi saat ini";
-            }
-
-            if (previousHighest != null) {
-                walletService.releaseHeldBalance(previousHighest.getBuyerId(), previousHighest.getAmount());
-            }
-            walletService.holdBalance(userId, amount);
-
-            Bid bid = new Bid();
-            bid.setAmount(amount);
-            bid.setAuction(auction);
-            bid.setTimestamp(LocalDateTime.now());
-            bid.setBuyerId(userId);
-            bidRepository.save(bid);
-
-            LocalDateTime twoMinutesFromNow = LocalDateTime.now().plusMinutes(2);
-            if (twoMinutesFromNow.isAfter(auction.getEndTime())) {
-                auction.setEndTime(LocalDateTime.now().plusMinutes(2));
-                auction.setStatus(AuctionStatus.EXTENDED);
-            }
-
-            auctionRepository.save(auction);
-
-            eventPublisher.publishEvent(new BidPlacedEvent(this, auctionId, userId, amount));
-            return "Bid berhasil, saldo ditahan";
         } catch (OptimisticLockException | ObjectOptimisticLockingFailureException e) {
             return "Sistem sedang sibuk, silakan coba lagi";
         }
     }
 
     public String determineWinner(Auction auction) {
-
-        Optional<Bid> highestBid = auction.getBids().stream()
-                .max(Comparator.comparingDouble(Bid::getAmount));
-
-        if (highestBid.isEmpty()) {
-            auction.setStatus(AuctionStatus.UNSOLD);
-            auctionRepository.save(auction);
-            eventPublisher.publishEvent(new AuctionEndedEvent(
-                this,
-                auction.getId(),
-                null,
-                0.0,
-                AuctionStatus.UNSOLD
-            ));
-            return "Lelang berakhir tanpa pemenang";
-        }
-
-        if (highestBid.get().getAmount() >= auction.getReservePrice()) {
-            auction.setStatus(AuctionStatus.WON);
-            walletService.deductHeldBalance(highestBid.get().getBuyerId(), highestBid.get().getAmount());
-            eventPublisher.publishEvent(new AuctionEndedEvent(
-                this,
-                auction.getId(),
-                highestBid.get().getBuyerId(),
-                highestBid.get().getAmount(),
-                AuctionStatus.WON
-            ));
-        } else {
-            auction.setStatus(AuctionStatus.UNSOLD);
-            walletService.releaseHeldBalance(highestBid.get().getBuyerId(), highestBid.get().getAmount());
-            eventPublisher.publishEvent(new AuctionEndedEvent(
-                this,
-                auction.getId(),
-                null,
-                highestBid.isPresent() ? highestBid.get().getAmount() : 0.0,
-                AuctionStatus.UNSOLD
-            ));
-        }
-
-        auctionRepository.save(auction);
-
-        return "User menang lelang, saldo dipotong";
+        AuctionStrategy strategy = strategyFactory.getStrategy(auction.getType());
+        return strategy.determineWinner(auction);
     }
 
     @Scheduled(fixedRate = 60000)
