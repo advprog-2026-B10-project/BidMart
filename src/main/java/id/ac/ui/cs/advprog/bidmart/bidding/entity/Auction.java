@@ -42,4 +42,8 @@ public class Auction {
 
     @Version
     private Long version;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AuctionType type;
 }
