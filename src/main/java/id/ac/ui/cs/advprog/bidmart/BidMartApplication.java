@@ -14,7 +14,6 @@ import id.ac.ui.cs.advprog.bidmart.auth.entity.User;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 
 @SpringBootApplication
-@ComponentScan(basePackages = "id.ac.ui.cs.advprog.bidmart")
 @EnableScheduling
 @EnableAsync
 public class BidMartApplication {
@@ -23,6 +22,7 @@ public class BidMartApplication {
     }
 
     @Bean
+    @org.springframework.context.annotation.Profile("!test")
     CommandLineRunner initAdmin(UserRepository repository, PasswordEncoder encoder) {
         return args -> {
             if (repository.findByEmail("admin@bidmart.com").isEmpty()) {

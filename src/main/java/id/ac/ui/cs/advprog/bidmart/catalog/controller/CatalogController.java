@@ -42,13 +42,20 @@ public class CatalogController {
         }
     }
 
+    @GetMapping("/{id}/validate")
+    public ResponseEntity<Boolean> validateKatalog(@PathVariable Long id) {
+        Catalog catalog = catalogService.getKatalogById(id);
+        return ResponseEntity.ok(catalog != null);
+    }
+
     @GetMapping("/search")
     public ResponseEntity<List<Catalog>> search(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Long cat,
             @RequestParam(required = false) Double min,
-            @RequestParam(required = false) Double max) {
-        return ResponseEntity.ok(catalogService.searchKatalog(q, cat, min, max));
+            @RequestParam(required = false) Double max,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endTime) {
+        return ResponseEntity.ok(catalogService.searchKatalog(q, cat, min, max, endTime));
     }
 
     // Endpoint: PUT /api/katalog/update/5
