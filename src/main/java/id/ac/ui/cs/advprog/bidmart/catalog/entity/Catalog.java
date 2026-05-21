@@ -37,9 +37,15 @@ public class Catalog {
 
     private Double hargaSekarang;
 
+    @Column(nullable = false)
+    private String sellerId;
+
+    @Transient
+    private String sellerName;
+
     public Catalog() {}
 
-    public Catalog(String judul, String deskripsi, String gambar, Category category, Double hargaAwal, Double hargaCadangan, Integer durasiLelang) {
+    public Catalog(String judul, String deskripsi, String gambar, Category category, Double hargaAwal, Double hargaCadangan, Integer durasiLelang, String sellerId) {
         this.judul = judul;
         this.deskripsi = deskripsi;
         this.gambar = gambar;
@@ -47,5 +53,6 @@ public class Catalog {
         this.hargaAwal = hargaAwal;
         this.hargaCadangan = hargaCadangan;
         this.durasiLelang = durasiLelang;
+        this.sellerId = sellerId;
     }
 }

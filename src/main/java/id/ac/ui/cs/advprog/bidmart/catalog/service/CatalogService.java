@@ -7,16 +7,22 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Subquery;
+import jakarta.persistence.criteria.Root;
+import id.ac.ui.cs.advprog.bidmart.bidding.entity.Auction;
 
 @Service
 public class CatalogService {
 
     private final CatalogRepository catalogRepository;
+    private final CatalogAuthService catalogAuthService;
 
     @Autowired
-    public CatalogService(CatalogRepository catalogRepository) {
+    public CatalogService(CatalogRepository catalogRepository, CatalogAuthService catalogAuthService) {
         this.catalogRepository = catalogRepository;
+        this.catalogAuthService = catalogAuthService;
     }
 
     public Catalog createListing(Catalog katalog) {
@@ -29,10 +35,15 @@ public class CatalogService {
     }
 
     public Catalog getKatalogById(Long id) {
-        return catalogRepository.findById(id).orElse(null);
+        Catalog catalog = catalogRepository.findById(id).orElse(null);
+        if (catalog != null && catalog.getSellerId() != null) {
+            String sellerName = catalogAuthService.getSellerName(catalog.getSellerId());
+            catalog.setSellerName(sellerName);
+        }
+        return catalog;
     }
 
-    public List<Catalog> searchKatalog(String keyword, Long categoryId, Double minPrice, Double maxPrice) {
+    public List<Catalog> searchKatalog(String keyword, Long categoryId, Double minPrice, Double maxPrice, LocalDateTime endTime) {
         return catalogRepository.findAll((root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -47,7 +58,7 @@ public class CatalogService {
             // Filter Kategori
             if (categoryId != null) {
                 // Lu ambil field 'kategori' (objek), terus ambil field 'id' di dalemnya
-                predicates.add(cb.equal(root.get("kategori").get("id"), categoryId));
+                predicates.add(cb.equal(root.get("category").get("id"), categoryId));
             }
             // Filter Rentang Harga
             if (minPrice != null) {
@@ -55,6 +66,15 @@ public class CatalogService {
             }
             if (maxPrice != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("hargaAwal"), maxPrice));
+            }
+            
+            // Filter Waktu Berakhir (endTime) menggunakan subquery ke entitas Auction
+            if (endTime != null) {
+                Subquery<Long> subquery = query.subquery(Long.class);
+                Root<Auction> auctionRoot = subquery.from(Auction.class);
+                subquery.select(auctionRoot.get("listingId"));
+                subquery.where(cb.lessThanOrEqualTo(auctionRoot.get("endTime"), endTime));
+                predicates.add(root.get("id").in(subquery));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
