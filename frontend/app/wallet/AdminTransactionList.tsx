@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
+import { API_URL } from '@/lib/config';
 
 interface Transaction {
     id: number;
@@ -17,7 +18,7 @@ export default function AdminTransactionList() {
 
     const fetchTransactions = async () => {
         try {
-            const res = await fetch('http://localhost:8080/wallet/admin/transactions');
+            const res = await fetch(`${API_URL}/wallet/admin/transactions`);
             if (res.ok) {
                 const data = await res.json();
                 setTransactions(data);

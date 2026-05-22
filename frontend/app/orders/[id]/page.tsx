@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authHeaders } from '@/lib/authUtils';
+import { API_URL } from '@/lib/config';
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = API_URL;
 
 interface OrderDetail {
   id: number;

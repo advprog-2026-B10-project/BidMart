@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
+import { API_URL_WITH_API } from '@/lib/config';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({ email: '', password: '', displayName: '', role: '' });
@@ -10,7 +11,7 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:8080/api/auth/register', formData);
+      await axios.post(`${API_URL_WITH_API}/auth/register`, formData);
       setStatus({ type: 'success', message: 'Registration successful! Please check your email for the verification link.' });
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.status === 400 && typeof err.response.data === 'object') {
