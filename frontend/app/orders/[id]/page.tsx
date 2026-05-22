@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { authHeaders } from '@/lib/authUtils';
 
 const API_BASE = 'http://localhost:8080';
 
@@ -27,13 +28,6 @@ interface OrderDetail {
 interface UiStatus {
   type: 'success' | 'error' | '';
   message: string;
-}
-
-function authHeaders(): Record<string, string> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
 }
 
 function formatDate(iso: string | null): string {
