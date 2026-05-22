@@ -48,7 +48,7 @@ public class SecurityConfig {
                 )
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/verify", "/api/auth/refresh", "/api/auth/mfa/verify").permitAll()
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/verify", "/api/auth/refresh", "/api/auth/mfa/verify", "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
                     .requestMatchers("/wallet/**").permitAll()
                 .requestMatchers("/api/auth/profile", "/api/auth/mfa/toggle", "/api/auth/logout").authenticated()
                 .requestMatchers("/api/auth/users", "/api/auth/admin/**").hasRole("ADMIN") 

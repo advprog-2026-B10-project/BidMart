@@ -22,6 +22,27 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String mailFrom;
 
+    @Async
+    public void sendPasswordResetEmail(String to, String token) {
+        String resetUrl = frontendUrl + "/reset-password?token=" + token;
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setFrom(mailFrom);
+        message.setSubject("Reset your BidMart password");
+        message.setText("You requested a password reset. Click the link below to set a new password:\n"
+                        + resetUrl
+                        + "\n\nIf you did not request this, you can safely ignore this email.");
+
+        try {
+            mailSender.send(message);
+            log.info("Password reset email sent to {}", to);
+        } catch (MailException exception) {
+            log.error("Failed to send password reset email to {}", to, exception);
+            throw exception;
+        }
+    }
+
     @Async 
     public void sendVerificationEmail(String to, String token) {
         String verificationUrl = frontendUrl + "/verify?token=" + token;

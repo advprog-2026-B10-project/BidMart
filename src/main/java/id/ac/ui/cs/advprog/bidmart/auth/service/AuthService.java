@@ -221,6 +221,30 @@ public class AuthService {
         refreshTokenRepository.deleteByEmail(email);
     }
 
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
+
+        String token = UUID.randomUUID().toString();
+        user.setPasswordResetToken(token);
+        userRepository.save(user);
+
+        emailService.sendPasswordResetEmail(user.getEmail(), token);
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        User user = userRepository.findByPasswordResetToken(request.getToken())
+                .orElseThrow(() -> new AuthException(HttpStatus.BAD_REQUEST, "Invalid or expired reset token"));
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setPasswordResetToken(null);
+        userRepository.save(user);
+
+        refreshTokenRepository.deleteByEmail(user.getEmail());
+    }
+
     public void verifyUser(String token) {
         User user = userRepository.findByVerificationToken(token)
                 .orElseThrow(() -> new AuthException(HttpStatus.BAD_REQUEST, "Invalid verification token"));

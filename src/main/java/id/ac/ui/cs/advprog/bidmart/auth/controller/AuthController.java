@@ -5,6 +5,8 @@ import id.ac.ui.cs.advprog.bidmart.auth.dto.AdminUserResponse;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.LoginRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.ProfileResponse;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.RegisterRequest;
+import id.ac.ui.cs.advprog.bidmart.auth.dto.ForgotPasswordRequest;
+import id.ac.ui.cs.advprog.bidmart.auth.dto.ResetPasswordRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.UpdateProfileRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.RefreshTokenRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.MfaToggleRequest;
@@ -97,6 +99,18 @@ public class AuthController {
     public ResponseEntity<String> logout(Authentication authentication) {
         authService.logout(authentication.getName());
         return ResponseEntity.ok("Logged out successfully");
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.ok("If the email is registered, a password reset link has been sent.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok("Password reset successfully. You can now login with your new password.");
     }
 
     @PostMapping("/mfa/toggle")
