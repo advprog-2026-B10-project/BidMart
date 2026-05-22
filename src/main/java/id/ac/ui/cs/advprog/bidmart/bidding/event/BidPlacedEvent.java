@@ -5,7 +5,7 @@ import org.springframework.context.ApplicationEvent;
 import lombok.Getter;
 
 @Getter
-public class BidPlacedEvent extends ApplicationEvent{
+public class BidPlacedEvent extends ApplicationEvent {
     private final Long auctionId;
     private final String buyerId;
     private final Double amount;
