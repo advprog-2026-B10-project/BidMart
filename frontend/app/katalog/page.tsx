@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axiosClient from '@/lib/axiosClient';
 import Link from 'next/link';
 
@@ -82,7 +82,7 @@ export default function CatalogPage() {
   };
 
   const renderCategoryOptions = (cats: Category[], prefix = '') => {
-    let options: JSX.Element[] = [];
+    let options: React.ReactNode[] = [];
     cats.forEach(c => {
       options.push(
         <option key={c.id} value={c.id}>
