@@ -1,49 +1,47 @@
 package id.ac.ui.cs.advprog.bidmart.catalog.service;
 
-import id.ac.ui.cs.advprog.bidmart.auth.entity.Role;
-import id.ac.ui.cs.advprog.bidmart.auth.entity.User;
-import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.Optional;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class CatalogAuthServiceTest {
 
     @Mock
-    private UserRepository userRepository;
+    private RestTemplate restTemplate;
 
     @InjectMocks
     private CatalogAuthService catalogAuthService;
 
     @Test
     void testGetSellerNameSuccess() {
-        User seller = User.builder()
-                .email("seller@example.com")
-                .displayName("Jane Doe")
-                .role(Role.SELLER)
-                .isEnabled(true)
-                .build();
+        ReflectionTestUtils.setField(catalogAuthService, "restTemplate", restTemplate);
+        Map<String, Object> mockResponse = Map.of("username", "Jane Doe");
+        
+        when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(mockResponse);
 
-        when(userRepository.findByEmail("seller@example.com")).thenReturn(Optional.of(seller));
-
-        String sellerName = catalogAuthService.getSellerName("seller@example.com");
+        String sellerName = catalogAuthService.getSellerName("seller456");
         assertEquals("Jane Doe", sellerName);
     }
 
     @Test
-    void testGetSellerNameNotFound() {
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+    void testGetSellerNameException() {
+        ReflectionTestUtils.setField(catalogAuthService, "restTemplate", restTemplate);
+        
+        when(restTemplate.getForObject(anyString(), eq(Map.class))).thenThrow(new RuntimeException("Connection refused"));
 
-        String sellerName = catalogAuthService.getSellerName("unknown@example.com");
-        assertEquals("Unknown Seller", sellerName);
+        String sellerName = catalogAuthService.getSellerName("seller456");
+        assertEquals("Seller Service Unavailable", sellerName);
     }
 }
