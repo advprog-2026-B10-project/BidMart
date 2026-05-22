@@ -46,5 +46,26 @@ jobs:
             pkill -f 'java.*\.jar' || true
             rm -f *-plain.jar
             nohup java -Xmx300m -Xms150m -jar $(ls *.jar | head -n 1) > /home/ubuntu/bidmart/app.log 2>&1 &
+            
+            if [ ! -d /home/ubuntu/prometheus ]; then
+              wget https://github.com/prometheus/prometheus/releases/download/v2.45.0/prometheus-2.45.0.linux-amd64.tar.gz
+              tar xvf prometheus-2.45.0.linux-amd64.tar.gz
+              mv prometheus-2.45.0.linux-amd64 /home/ubuntu/prometheus
+              rm prometheus-2.45.0.linux-amd64.tar.gz
+            fi
+            
+            cat << 'PROMETHEUS_EOF' > /home/ubuntu/prometheus/prometheus.yml
+            global:
+              scrape_interval: 15s
+            scrape_configs:
+              - job_name: 'spring-boot'
+                metrics_path: '/actuator/prometheus'
+                static_configs:
+                  - targets: ['localhost:8080']
+            PROMETHEUS_EOF
+            
+            pkill -f 'prometheus' || true
+            nohup /home/ubuntu/prometheus/prometheus --config.file=/home/ubuntu/prometheus/prometheus.yml --web.listen-address=":9090" > /home/ubuntu/prometheus.log 2>&1 &
+            
             sleep 5
           EOF
