@@ -25,9 +25,9 @@ export default function LoginPage() {
     setInfo('');
     
     try {
-      const response = await axiosClient.post('/auth/login', { 
-        email, 
-        password 
+      const response = await axios.post('http://13.221.75.220:8080/api/auth/login', {
+        email,
+        password
       });
 
       if (response.data.mfaRequired) {
