@@ -47,5 +47,5 @@ public class Auction {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AuctionType type;
+    private AuctionType type = AuctionType.ENGLISH;
 }
