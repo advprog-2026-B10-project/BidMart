@@ -287,4 +287,57 @@ class OrderControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
     }
+
+    // --- /orders/{id}/admin/refund ---
+
+    @Test
+    @WithMockUser(username = "admin@x", roles = "ADMIN")
+    void adminRefund_happyPath() throws Exception {
+        Long id = seedWithAddress(1L, "alice@x", "seller@x", OrderStatus.DISPUTED, "Jl. Mawar No. 1");
+
+        mockMvc.perform(patch("/orders/{id}/admin/refund", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is("REFUNDED")))
+                .andExpect(jsonPath("$.refundedAt", notNullValue()));
+    }
+
+    @Test
+    @WithMockUser(username = "alice@x")
+    void adminRefund_rejectsNonAdmin() throws Exception {
+        Long id = seedWithAddress(1L, "alice@x", "seller@x", OrderStatus.DISPUTED, "Jl. Mawar No. 1");
+
+        mockMvc.perform(patch("/orders/{id}/admin/refund", id))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "admin@x", roles = "ADMIN")
+    void adminRefund_fromShipped_returns409() throws Exception {
+        Long id = seedWithAddress(1L, "alice@x", "seller@x", OrderStatus.SHIPPED, "Jl. Mawar No. 1");
+
+        mockMvc.perform(patch("/orders/{id}/admin/refund", id))
+                .andExpect(status().isConflict());
+    }
+
+    // --- /orders/{id}/admin/release ---
+
+    @Test
+    @WithMockUser(username = "admin@x", roles = "ADMIN")
+    void adminRelease_happyPath() throws Exception {
+        Long id = seedWithAddress(1L, "alice@x", "seller@x", OrderStatus.DISPUTED, "Jl. Mawar No. 1");
+
+        mockMvc.perform(patch("/orders/{id}/admin/release", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is("DELIVERED")))
+                .andExpect(jsonPath("$.deliveredAt", notNullValue()));
+    }
+
+    @Test
+    @WithMockUser(username = "seller@x")
+    void adminRelease_rejectsNonAdmin() throws Exception {
+        Long id = seedWithAddress(1L, "alice@x", "seller@x", OrderStatus.DISPUTED, "Jl. Mawar No. 1");
+
+        mockMvc.perform(patch("/orders/{id}/admin/release", id))
+                .andExpect(status().isForbidden());
+    }
 }
