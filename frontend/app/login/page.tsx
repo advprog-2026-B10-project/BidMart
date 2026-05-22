@@ -24,9 +24,9 @@ export default function LoginPage() {
     setInfo('');
     
     try {
-      const response = await axiosClient.post('/auth/login', { 
-        email, 
-        password 
+      const response = await axios.post('http://13.221.75.220:8080/api/auth/login', {
+        email,
+        password
       });
 
       if (response.data.mfaRequired) {
@@ -54,7 +54,7 @@ export default function LoginPage() {
   const handleResendVerification = async () => {
     setResending(true);
     try {
-      await axios.post('http://localhost:8080/api/auth/resend-verification', { email });
+      await axios.post('http://13.221.75.220:8080/api/auth/resend-verification', { email });
       setInfo('A new verification link has been sent to your email.');
       setError('');
     } catch {
