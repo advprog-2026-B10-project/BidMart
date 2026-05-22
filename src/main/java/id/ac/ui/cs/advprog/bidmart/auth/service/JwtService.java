@@ -114,6 +114,19 @@ public class JwtService {
         }
     }
 
+    public boolean isRefreshTokenValid(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(signingKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return "refresh".equals(claims.get("type", String.class));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public boolean isMfaChallengeTokenValid(String token) {
         try {
             Claims claims = Jwts.parser()

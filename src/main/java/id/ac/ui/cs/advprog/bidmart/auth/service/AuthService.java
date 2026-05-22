@@ -106,7 +106,7 @@ public class AuthService {
             throw new AuthException(HttpStatus.UNAUTHORIZED, "Refresh token has expired");
         }
 
-        if (!jwtService.isTokenValid(refreshTokenValue)) {
+        if (!jwtService.isRefreshTokenValid(refreshTokenValue)) {
             throw new AuthException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
         }
 
