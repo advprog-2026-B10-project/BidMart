@@ -42,3 +42,6 @@ out/
 
 ### Local docs (specs, plans, brainstorm notes) ###
 docs/
+
+node_modules/
+.next/

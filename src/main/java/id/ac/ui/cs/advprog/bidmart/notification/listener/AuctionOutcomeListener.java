@@ -1,17 +1,19 @@
-package id.ac.ui.cs.advprog.bidmart.notification.scheduler;
+package id.ac.ui.cs.advprog.bidmart.notification.listener;
 
 import id.ac.ui.cs.advprog.bidmart.bidding.entity.Auction;
 import id.ac.ui.cs.advprog.bidmart.bidding.entity.AuctionStatus;
 import id.ac.ui.cs.advprog.bidmart.bidding.entity.Bid;
+import id.ac.ui.cs.advprog.bidmart.bidding.event.AuctionEndedEvent;
 import id.ac.ui.cs.advprog.bidmart.bidding.repository.AuctionRepository;
 import id.ac.ui.cs.advprog.bidmart.notification.entity.NotificationType;
 import id.ac.ui.cs.advprog.bidmart.notification.service.NotificationService;
+import id.ac.ui.cs.advprog.bidmart.order.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -20,48 +22,45 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class AuctionOutcomeNotifier {
-
-    private static final List<AuctionStatus> TERMINAL = List.of(AuctionStatus.WON, AuctionStatus.UNSOLD);
+public class AuctionOutcomeListener {
 
     private final AuctionRepository auctionRepository;
-    private final AuctionNotificationStateRepository stateRepository;
+    private final OrderService orderService;
     private final NotificationService notificationService;
 
-    @Scheduled(fixedRate = 30_000)
-    public void tick() {
-        List<Auction> terminal = auctionRepository.findByStatusIn(TERMINAL);
-        for (Auction a : terminal) {
-            try {
-                processOne(a);
-            } catch (Exception e) {
-                log.error("Failed to notify outcome for auction {}: {}", a.getId(), e.getMessage());
+    @EventListener
+    @Async
+    public void onAuctionEnded(AuctionEndedEvent event) {
+        try {
+            Optional<Auction> auctionOpt = auctionRepository.findById(event.getAuctionId());
+            if (auctionOpt.isEmpty()) {
+                log.warn("Auction not found for AuctionEndedEvent: {}", event.getAuctionId());
+                return;
             }
+            Auction auction = auctionOpt.get();
+
+            if (event.getFinalStatus() == AuctionStatus.WON) {
+                handleWon(auction);
+            } else if (event.getFinalStatus() == AuctionStatus.UNSOLD) {
+                handleUnsold(auction);
+            }
+        } catch (Exception e) {
+            log.error("Failed to handle AuctionEndedEvent for auction {}: {}",
+                    event.getAuctionId(), e.getMessage());
         }
     }
 
-    private void processOne(Auction auction) {
-        Optional<AuctionNotificationState> existing = stateRepository.findById(auction.getId());
-        if (existing.isPresent() && existing.get().getLastNotifiedStatus() == auction.getStatus()) {
+    private void handleWon(Auction auction) {
+        List<Bid> bids = auction.getBids();
+        if (bids == null || bids.isEmpty()) {
+            log.warn("WON auction {} has no bids; skipping notifications", auction.getId());
             return;
         }
+        orderService.createFromWonAuction(auction);
 
-        if (auction.getStatus() == AuctionStatus.WON) {
-            notifyWon(auction);
-        } else if (auction.getStatus() == AuctionStatus.UNSOLD) {
-            notifyUnsold(auction);
-        }
-
-        stateRepository.save(AuctionNotificationState.builder()
-                .auctionId(auction.getId())
-                .lastNotifiedStatus(auction.getStatus())
-                .build());
-    }
-
-    private void notifyWon(Auction auction) {
-        List<Bid> bids = auction.getBids();
-        if (bids == null || bids.isEmpty()) return;
-        Bid winner = bids.stream().max(Comparator.comparingDouble(Bid::getAmount)).get();
+        Bid winner = bids.stream()
+                .max((a, b) -> Double.compare(a.getAmount(), b.getAmount()))
+                .orElseThrow();
         String ref = String.valueOf(auction.getId());
 
         notificationService.send(
@@ -86,7 +85,7 @@ public class AuctionOutcomeNotifier {
         }
     }
 
-    private void notifyUnsold(Auction auction) {
+    private void handleUnsold(Auction auction) {
         List<Bid> bids = auction.getBids();
         if (bids == null || bids.isEmpty()) return;
         String ref = String.valueOf(auction.getId());

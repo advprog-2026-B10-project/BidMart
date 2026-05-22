@@ -1,7 +1,6 @@
 package id.ac.ui.cs.advprog.bidmart.order.service;
 
 import id.ac.ui.cs.advprog.bidmart.bidding.entity.Auction;
-import id.ac.ui.cs.advprog.bidmart.bidding.entity.AuctionStatus;
 import id.ac.ui.cs.advprog.bidmart.bidding.entity.Bid;
 import id.ac.ui.cs.advprog.bidmart.notification.entity.NotificationType;
 import id.ac.ui.cs.advprog.bidmart.notification.service.NotificationService;
@@ -27,9 +26,6 @@ public class OrderService {
 
     @Transactional
     public Optional<Order> createFromWonAuction(Auction auction) {
-        if (auction.getStatus() != AuctionStatus.WON) {
-            throw new IllegalArgumentException("Auction must be WON to create order, was " + auction.getStatus());
-        }
         if (orderRepository.existsByAuctionId(auction.getId())) {
             return Optional.empty();
         }
@@ -158,6 +154,71 @@ public class OrderService {
                 NotificationType.ORDER_DELIVERED,
                 "Pesanan Diterima",
                 "Pembeli mengonfirmasi penerimaan pesanan #" + saved.getId() + ".",
+                String.valueOf(saved.getId()));
+        return saved;
+    }
+
+    @Transactional
+    public Order adminRefund(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NoSuchElementException("Order not found: " + orderId));
+        if (order.getStatus() != OrderStatus.DISPUTED) {
+            throw new IllegalStateException(
+                    "Cannot refund order from status " + order.getStatus());
+        }
+        order.setStatus(OrderStatus.REFUNDED);
+        order.setRefundedAt(LocalDateTime.now());
+        Order saved = orderRepository.save(order);
+
+        notificationService.send(
+                saved.getSellerId(),
+                NotificationType.ORDER_REFUNDED,
+                "Pesanan Direfund",
+                "Admin memutuskan refund untuk pesanan #" + saved.getId() + ".",
+                String.valueOf(saved.getId()));
+        return saved;
+    }
+
+    @Transactional
+    public Order adminRelease(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NoSuchElementException("Order not found: " + orderId));
+        if (order.getStatus() != OrderStatus.DISPUTED) {
+            throw new IllegalStateException(
+                    "Cannot release order from status " + order.getStatus());
+        }
+        order.setStatus(OrderStatus.DELIVERED);
+        if (order.getDeliveredAt() == null) {
+            order.setDeliveredAt(LocalDateTime.now());
+        }
+        Order saved = orderRepository.save(order);
+
+        notificationService.send(
+                saved.getSellerId(),
+                NotificationType.ORDER_RELEASED,
+                "Sengketa Ditolak",
+                "Admin memutuskan pesanan #" + saved.getId() + " sah, dana diteruskan.",
+                String.valueOf(saved.getId()));
+        return saved;
+    }
+
+    @Transactional
+    public Order autoDeliverOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NoSuchElementException("Order not found: " + orderId));
+        if (order.getStatus() != OrderStatus.SHIPPED) {
+            throw new IllegalStateException(
+                    "Cannot auto-deliver order from status " + order.getStatus());
+        }
+        order.setStatus(OrderStatus.DELIVERED);
+        order.setDeliveredAt(LocalDateTime.now());
+        Order saved = orderRepository.save(order);
+
+        notificationService.send(
+                saved.getSellerId(),
+                NotificationType.ORDER_DELIVERED,
+                "Pesanan Diterima Otomatis",
+                "Pesanan #" + saved.getId() + " ditandai diterima otomatis setelah jangka waktu konfirmasi habis.",
                 String.valueOf(saved.getId()));
         return saved;
     }
