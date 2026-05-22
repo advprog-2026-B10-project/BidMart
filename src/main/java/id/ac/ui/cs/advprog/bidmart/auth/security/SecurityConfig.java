@@ -50,7 +50,9 @@ public class SecurityConfig {
                 )
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/verify", "/api/auth/refresh", "/api/auth/mfa/verify", "/actuator/**").permitAll()
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/verify", "/api/auth/refresh", "/api/auth/mfa/verify", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/resend-verification").permitAll()
+                .requestMatchers("/wallet/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/katalog/**", "/api/kategori/**").permitAll()
                 .requestMatchers("/api/auth/profile", "/api/auth/mfa/toggle", "/api/auth/logout").authenticated()
                 .requestMatchers("/api/auth/users", "/api/auth/admin/**").hasRole("ADMIN") 

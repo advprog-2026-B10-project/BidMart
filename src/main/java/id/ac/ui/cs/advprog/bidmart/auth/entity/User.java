@@ -1,7 +1,10 @@
 package id.ac.ui.cs.advprog.bidmart.auth.entity;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -39,6 +42,11 @@ public class User implements UserDetails {
 
     private String phoneNumber;
 
+    private String avatarUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String shippingAddress;
+
     private String provider; 
 
     @Builder.Default
@@ -50,13 +58,36 @@ public class User implements UserDetails {
     @Column(name = "verification_token")
     private String verificationToken;
 
+    @Column(name = "password_reset_token")
+    private String passwordResetToken;
+
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_role_groups",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_group_id")
+    )
+    @Builder.Default
+    private Set<RoleGroup> roleGroups = new HashSet<>();
 
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        if (roleGroups != null) {
+            for (RoleGroup rg : roleGroups) {
+                if (rg.getPermissions() != null) {
+                    for (Permission p : rg.getPermissions()) {
+                        authorities.add(new SimpleGrantedAuthority(p.getName()));
+                    }
+                }
+            }
+        }
+        return authorities;
     }
 
     @Override

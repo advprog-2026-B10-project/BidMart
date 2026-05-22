@@ -13,8 +13,6 @@ import java.util.Optional;
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
     
     Optional<RefreshToken> findByToken(String token);
-    
-    Optional<RefreshToken> findByEmail(String email);
 
     @Query("SELECT r FROM RefreshToken r WHERE r.email = ?1 AND r.revoked = false AND r.expiresAt > CURRENT_TIMESTAMP ORDER BY r.createdAt ASC")
     List<RefreshToken> findActiveSessionsByEmail(String email);

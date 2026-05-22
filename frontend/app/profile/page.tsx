@@ -12,6 +12,8 @@ interface ProfileResponse {
   email: string;
   displayName: string;
   phoneNumber: string | null;
+  avatarUrl: string | null;
+  shippingAddress: string | null;
   role: string;
   enabled: boolean;
   mfaEnabled: boolean;
@@ -38,6 +40,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [shippingAddress, setShippingAddress] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [mfaToggling, setMfaToggling] = useState(false);
@@ -68,6 +72,8 @@ export default function ProfilePage() {
       setProfile(response.data);
       setDisplayName(response.data.displayName ?? '');
       setPhoneNumber(response.data.phoneNumber ?? '');
+      setAvatarUrl(response.data.avatarUrl ?? '');
+      setShippingAddress(response.data.shippingAddress ?? '');
     } catch (err: unknown) {
       const fallbackMessage = 'Failed to load profile.';
       if (axios.isAxiosError(err)) {
@@ -98,6 +104,8 @@ export default function ProfilePage() {
         {
           displayName,
           phoneNumber,
+          avatarUrl: avatarUrl || null,
+          shippingAddress: shippingAddress || null,
         }
       );
 
@@ -275,6 +283,28 @@ export default function ProfilePage() {
                   placeholder="Example: +628123456789"
                 />
                 <p className="text-xs text-gray-500 mt-2">Use 8-15 digits, optional + prefix.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Avatar URL</label>
+                <input
+                  type="url"
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="https://example.com/avatar.jpg"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Shipping Address</label>
+                <textarea
+                  value={shippingAddress}
+                  onChange={(e) => setShippingAddress(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                  placeholder="Street, city, postal code, country"
+                  rows={3}
+                />
               </div>
 
               <button

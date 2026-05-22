@@ -5,6 +5,9 @@ import id.ac.ui.cs.advprog.bidmart.auth.entity.Role;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.RefreshToken;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.User;
 import id.ac.ui.cs.advprog.bidmart.auth.exception.AuthException;
+import id.ac.ui.cs.advprog.bidmart.auth.entity.RoleGroup;
+import id.ac.ui.cs.advprog.bidmart.auth.repository.PermissionRepository;
+import id.ac.ui.cs.advprog.bidmart.auth.repository.RoleGroupRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,10 +31,14 @@ public class AuthService {
     private final JwtService jwtService; 
     private final MfaTotpService mfaTotpService;
     private final EmailService emailService;
+    private final RoleGroupRepository roleGroupRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Value("${app.auth.max-concurrent-sessions:3}")
     private int maxConcurrentSessions;
+
+    @Value("${app.auth.session-policy:revoke_oldest}")
+    private String sessionPolicy;
 
     public void register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -59,12 +66,32 @@ public class AuthService {
             .isEnabled(false) 
             .build();
 
+        roleGroupRepository.findByName(assignedRole.name()).ifPresent(rg ->
+                user.setRoleGroups(java.util.Set.of(rg)));
+
         userRepository.save(user);
 
         emailService.sendVerificationEmail(user.getEmail(), token);
         
     }
 
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (user.isEnabled()) {
+            throw new AuthException(HttpStatus.BAD_REQUEST, "Account is already verified");
+        }
+
+        String token = UUID.randomUUID().toString();
+        user.setVerificationToken(token);
+        userRepository.save(user);
+
+        emailService.sendVerificationEmail(user.getEmail(), token);
+    }
+
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
@@ -106,7 +133,7 @@ public class AuthService {
             throw new AuthException(HttpStatus.UNAUTHORIZED, "Refresh token has expired");
         }
 
-        if (!jwtService.isTokenValid(refreshTokenValue)) {
+        if (!jwtService.isRefreshTokenValid(refreshTokenValue)) {
             throw new AuthException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
         }
 
@@ -125,6 +152,7 @@ public class AuthService {
                 .build();
     }
 
+    @Transactional
     public AuthResponse verifyMfa(MfaVerifyRequest request) {
         if (!jwtService.isMfaChallengeTokenValid(request.getChallengeToken())) {
             throw new AuthException(HttpStatus.UNAUTHORIZED, "Invalid MFA challenge token");
@@ -193,6 +221,21 @@ public class AuthService {
     }
 
     @Transactional
+    public void disableUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!user.isEnabled()) {
+            throw new AuthException(HttpStatus.BAD_REQUEST, "User is already disabled");
+        }
+
+        user.setEnabled(false);
+        userRepository.save(user);
+
+        refreshTokenRepository.revokeActiveSessionsByEmail(user.getEmail());
+    }
+
+    @Transactional
     public AdminUserResponse updateUserRole(Long userId, String roleValue, String actorEmail) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
@@ -214,9 +257,57 @@ public class AuthService {
         return AdminUserResponse.fromUser(user, refreshTokenRepository.countActiveSessionsByEmail(user.getEmail()));
     }
 
+    public List<UserSessionResponse> getUserSessions(String email) {
+        return refreshTokenRepository.findActiveSessionsByEmail(email)
+                .stream()
+                .map(rt -> UserSessionResponse.builder()
+                        .id(rt.getId())
+                        .createdAt(rt.getCreatedAt())
+                        .expiresAt(rt.getExpiresAt())
+                        .build())
+                .toList();
+    }
+
+    @Transactional
+    public void revokeSession(Long sessionId, String email) {
+        RefreshToken token = refreshTokenRepository.findById(sessionId)
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "Session not found"));
+
+        if (!token.getEmail().equals(email)) {
+            throw new AuthException(HttpStatus.FORBIDDEN, "You can only revoke your own sessions");
+        }
+
+        token.setRevoked(true);
+        refreshTokenRepository.save(token);
+    }
+
     @Transactional
     public void logout(String email) {
         refreshTokenRepository.deleteByEmail(email);
+    }
+
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
+
+        String token = UUID.randomUUID().toString();
+        user.setPasswordResetToken(token);
+        userRepository.save(user);
+
+        emailService.sendPasswordResetEmail(user.getEmail(), token);
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        User user = userRepository.findByPasswordResetToken(request.getToken())
+                .orElseThrow(() -> new AuthException(HttpStatus.BAD_REQUEST, "Invalid or expired reset token"));
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setPasswordResetToken(null);
+        userRepository.save(user);
+
+        refreshTokenRepository.deleteByEmail(user.getEmail());
     }
 
     public void verifyUser(String token) {
@@ -244,6 +335,14 @@ public class AuthService {
 
         if (request.getPhoneNumber() != null) {
             user.setPhoneNumber(request.getPhoneNumber().trim());
+        }
+
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(request.getAvatarUrl().trim());
+        }
+
+        if (request.getShippingAddress() != null) {
+            user.setShippingAddress(request.getShippingAddress().trim());
         }
 
         userRepository.save(user);
@@ -280,6 +379,11 @@ public class AuthService {
 
         if (overflow <= 0) {
             return;
+        }
+
+        if ("reject_new".equals(sessionPolicy)) {
+            throw new AuthException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Maximum concurrent sessions (" + maxConcurrentSessions + ") reached. Please log out from another device first.");
         }
 
         for (int i = 0; i < overflow && i < activeSessions.size(); i++) {

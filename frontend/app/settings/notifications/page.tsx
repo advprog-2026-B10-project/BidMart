@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { authHeaders } from '@/lib/authUtils';
 
 const API_BASE = 'http://localhost:8080';
 
@@ -17,13 +18,6 @@ interface PreferenceState {
 interface UiStatus {
   type: 'success' | 'error' | '';
   message: string;
-}
-
-function authHeaders(): Record<string, string> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
 }
 
 const DEFAULT_PREFS: PreferenceState = {
