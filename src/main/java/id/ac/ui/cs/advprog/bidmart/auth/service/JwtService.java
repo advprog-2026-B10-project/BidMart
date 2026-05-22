@@ -46,8 +46,9 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(user.getEmail())
-                .claim("roles", roles) 
-            .id(UUID.randomUUID().toString())
+                .claim("roles", roles)
+                .claim("mfaCompleted", true)
+                .id(UUID.randomUUID().toString())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION))
                 .signWith(signingKey)
@@ -83,6 +84,20 @@ public class JwtService {
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
+    }
+
+    public boolean extractMfaCompleted(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(signingKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            Boolean mfaCompleted = claims.get("mfaCompleted", Boolean.class);
+            return mfaCompleted != null && mfaCompleted;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public List<String> extractRoles(String token) {
