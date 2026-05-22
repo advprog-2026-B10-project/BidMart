@@ -281,14 +281,18 @@ export default function HomePage() {
                 you have full access to our auction features. Start bidding or list your items today.
               </p>
               <div className="mt-8 flex gap-4">
-                <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition">Browse Auctions</button>
+                <Link href="/katalog">
+                  <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition">Browse Auctions</button>
+                </Link>
                 <Link href="/wallet">
                   <button className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-medium transition shadow-lg hover:shadow-emerald-900/20">
                     My Wallet
                   </button>
                 </Link>
                 {userRole === 'SELLER' && (
-                  <button className="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition">Post New Item</button>
+                  <Link href="/katalog/create">
+                    <button className="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition">Post New Item</button>
+                  </Link>
                 )}
               </div>
             </div>
