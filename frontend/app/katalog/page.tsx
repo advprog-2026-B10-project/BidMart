@@ -82,7 +82,7 @@ export default function CatalogPage() {
   };
 
   const renderCategoryOptions = (cats: Category[], prefix = '') => {
-    let options: React.ReactNode[] = [];
+    let options: any[] = [];
     cats.forEach(c => {
       options.push(
         <option key={c.id} value={c.id}>
