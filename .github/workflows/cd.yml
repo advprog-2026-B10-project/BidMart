@@ -37,21 +37,14 @@ jobs:
           strip_components: 2
 
       - name: Execute and Run on EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            if [ ! -f /swapfile ]; then
-              sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
-              sudo chmod 600 /swapfile
-              sudo mkswap /swapfile
-              sudo swapon /swapfile
-            fi
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
             cd /home/ubuntu/bidmart
             pkill -f 'java.*\.jar' || true
             rm -f *-plain.jar
             nohup java -Xmx300m -Xms150m -jar $(ls *.jar | head -n 1) > /home/ubuntu/bidmart/app.log 2>&1 &
-            sleep 2
-            exit 0
+            sleep 5
+          EOF
