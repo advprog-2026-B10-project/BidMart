@@ -65,6 +65,7 @@ public class AuthService {
         
     }
 
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
@@ -125,6 +126,7 @@ public class AuthService {
                 .build();
     }
 
+    @Transactional
     public AuthResponse verifyMfa(MfaVerifyRequest request) {
         if (!jwtService.isMfaChallengeTokenValid(request.getChallengeToken())) {
             throw new AuthException(HttpStatus.UNAUTHORIZED, "Invalid MFA challenge token");
