@@ -57,6 +57,10 @@ dependencies {
 	testImplementation("net.serenity-bdd:serenity-spring:4.1.3")
 	testImplementation("net.serenity-bdd:serenity-screenplay:4.1.3")
 	testImplementation("net.serenity-bdd:serenity-screenplay-webdriver:4.1.3")
+	testImplementation("net.serenity-bdd:serenity-rest-assured:4.1.3")
+	
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 }
 
 tasks.withType<Test> {
