@@ -9,6 +9,7 @@ import id.ac.ui.cs.advprog.bidmart.order.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -86,6 +87,20 @@ public class OrderController {
             @Valid @RequestBody DisputeRequest request,
             Authentication authentication) {
         Order updated = orderService.disputeOrder(id, authentication.getName(), request.getReason());
+        return ResponseEntity.ok(OrderResponse.from(updated));
+    }
+
+    @PatchMapping("/{id}/admin/refund")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<OrderResponse> adminRefund(@PathVariable Long id) {
+        Order updated = orderService.adminRefund(id);
+        return ResponseEntity.ok(OrderResponse.from(updated));
+    }
+
+    @PatchMapping("/{id}/admin/release")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<OrderResponse> adminRelease(@PathVariable Long id) {
+        Order updated = orderService.adminRelease(id);
         return ResponseEntity.ok(OrderResponse.from(updated));
     }
 }

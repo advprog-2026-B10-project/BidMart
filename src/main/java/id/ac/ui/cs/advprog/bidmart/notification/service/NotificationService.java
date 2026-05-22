@@ -52,7 +52,7 @@ public class NotificationService {
     private boolean allowedByCategory(NotificationPreference pref, NotificationType type) {
         return switch (type) {
             case AUCTION_WON, AUCTION_LOST, AUCTION_UNSOLD, NEW_BID -> pref.getAuctionStatusEnabled();
-            case ORDER_CREATED, ORDER_CONFIRMED, ORDER_SHIPPED, ORDER_DELIVERED, ORDER_DISPUTED, ORDER_UPDATE -> pref.getOrderUpdateEnabled();
+            case ORDER_CREATED, ORDER_CONFIRMED, ORDER_SHIPPED, ORDER_DELIVERED, ORDER_DISPUTED, ORDER_REFUNDED, ORDER_RELEASED, ORDER_UPDATE -> pref.getOrderUpdateEnabled();
             case TRANSACTION -> pref.getTransactionEnabled();
             case SYSTEM -> pref.getSystemEnabled();
         };
