@@ -211,6 +211,21 @@ public class AuthService {
     }
 
     @Transactional
+    public void disableUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!user.isEnabled()) {
+            throw new AuthException(HttpStatus.BAD_REQUEST, "User is already disabled");
+        }
+
+        user.setEnabled(false);
+        userRepository.save(user);
+
+        refreshTokenRepository.revokeActiveSessionsByEmail(user.getEmail());
+    }
+
+    @Transactional
     public AdminUserResponse updateUserRole(Long userId, String roleValue, String actorEmail) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));

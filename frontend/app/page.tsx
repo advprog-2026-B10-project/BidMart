@@ -114,6 +114,19 @@ export default function HomePage() {
     }
   };
 
+  const handleDisableUser = async (userId: number) => {
+    setActionError('');
+    setActionMessage('');
+    try {
+      await axiosClient.post(`/auth/admin/users/${userId}/disable`);
+      setActionMessage(`User #${userId} disabled successfully.`);
+      fetchUsers();
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to disable user.';
+      setActionError(message);
+    }
+  };
+
   const handleRoleChange = async (userId: number) => {
     setActionMessage('');
     setActionError('');
@@ -208,6 +221,13 @@ export default function HomePage() {
                               className="px-3 py-2 bg-amber-600 hover:bg-amber-700 rounded-md text-xs font-semibold transition"
                             >
                               Revoke Sessions
+                            </button>
+                            <button
+                              onClick={() => handleDisableUser(user.id)}
+                              disabled={!user.enabled}
+                              className="px-3 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-md text-xs font-semibold transition"
+                            >
+                              Disable
                             </button>
                             <div className="flex gap-2">
                               <select

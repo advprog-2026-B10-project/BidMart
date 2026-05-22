@@ -75,6 +75,12 @@ public class AuthController {
         return ResponseEntity.ok(authService.updateUserRole(id, request.getRole(), authentication.getName()));
     }
 
+    @PostMapping("/admin/users/{id}/disable")
+    public ResponseEntity<String> disableUser(@PathVariable Long id) {
+        authService.disableUser(id);
+        return ResponseEntity.ok("User disabled successfully and all sessions revoked.");
+    }
+
     @GetMapping("/profile")
     public ResponseEntity<ProfileResponse> getProfile(Authentication authentication) {
         ProfileResponse response = authService.getProfile(authentication.getName());
