@@ -11,7 +11,7 @@ export default function RegisterPage() {
     e.preventDefault();
     try {
       await axios.post('http://localhost:8080/api/auth/register', formData);
-      setStatus({ type: 'success', message: 'Registration successful! Check your DB for the token.' });
+      setStatus({ type: 'success', message: 'Registration successful! Please check your email for the verification link.' });
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.status === 400 && typeof err.response.data === 'object') {
         const details = (err.response.data as { details?: Record<string, string>; message?: string })?.details;
