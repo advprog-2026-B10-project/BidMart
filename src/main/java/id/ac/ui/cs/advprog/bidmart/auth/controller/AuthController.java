@@ -1,21 +1,9 @@
 package id.ac.ui.cs.advprog.bidmart.auth.controller;
 
-import id.ac.ui.cs.advprog.bidmart.auth.dto.AuthResponse;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.AdminUserResponse;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.LoginRequest;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.ProfileResponse;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.RegisterRequest;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.ForgotPasswordRequest;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.ResendVerificationRequest;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.ResetPasswordRequest;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.UpdateProfileRequest;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.RefreshTokenRequest;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.MfaToggleRequest;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.MfaStatusResponse;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.MfaVerifyRequest;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.AdminSessionRevokeResponse;
-import id.ac.ui.cs.advprog.bidmart.auth.dto.UpdateUserRoleRequest;
+import id.ac.ui.cs.advprog.bidmart.auth.dto.*;
+
 import id.ac.ui.cs.advprog.bidmart.auth.service.AuthService;
+import id.ac.ui.cs.advprog.bidmart.auth.service.AdminPermissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final AdminPermissionService adminPermissionService;
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
@@ -79,6 +68,53 @@ public class AuthController {
     public ResponseEntity<String> disableUser(@PathVariable Long id) {
         authService.disableUser(id);
         return ResponseEntity.ok("User disabled successfully and all sessions revoked.");
+    }
+
+    @GetMapping("/admin/permissions")
+    public ResponseEntity<List<PermissionResponse>> getAllPermissions() {
+        return ResponseEntity.ok(adminPermissionService.getAllPermissions());
+    }
+
+    @PostMapping("/admin/permissions")
+    public ResponseEntity<PermissionResponse> createPermission(@Valid @RequestBody CreatePermissionRequest request) {
+        return ResponseEntity.ok(adminPermissionService.createPermission(request));
+    }
+
+    @DeleteMapping("/admin/permissions/{id}")
+    public ResponseEntity<String> deletePermission(@PathVariable Long id) {
+        adminPermissionService.deletePermission(id);
+        return ResponseEntity.ok("Permission deleted successfully.");
+    }
+
+    @GetMapping("/admin/role-groups")
+    public ResponseEntity<List<RoleGroupResponse>> getAllRoleGroups() {
+        return ResponseEntity.ok(adminPermissionService.getAllRoleGroups());
+    }
+
+    @PostMapping("/admin/role-groups")
+    public ResponseEntity<RoleGroupResponse> createRoleGroup(@Valid @RequestBody CreateRoleGroupRequest request) {
+        return ResponseEntity.ok(adminPermissionService.createRoleGroup(request));
+    }
+
+    @PutMapping("/admin/role-groups/{id}")
+    public ResponseEntity<RoleGroupResponse> updateRoleGroup(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateRoleGroupRequest request) {
+        return ResponseEntity.ok(adminPermissionService.updateRoleGroup(id, request));
+    }
+
+    @DeleteMapping("/admin/role-groups/{id}")
+    public ResponseEntity<String> deleteRoleGroup(@PathVariable Long id) {
+        adminPermissionService.deleteRoleGroup(id);
+        return ResponseEntity.ok("Role group deleted successfully.");
+    }
+
+    @PutMapping("/admin/users/{id}/roles")
+    public ResponseEntity<String> updateUserRoles(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRolesRequest request) {
+        adminPermissionService.updateUserRoleGroups(id, request.getRoleGroupIds());
+        return ResponseEntity.ok("User roles updated successfully.");
     }
 
     @GetMapping("/profile")

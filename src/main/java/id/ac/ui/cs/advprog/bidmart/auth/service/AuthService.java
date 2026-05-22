@@ -5,6 +5,9 @@ import id.ac.ui.cs.advprog.bidmart.auth.entity.Role;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.RefreshToken;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.User;
 import id.ac.ui.cs.advprog.bidmart.auth.exception.AuthException;
+import id.ac.ui.cs.advprog.bidmart.auth.entity.RoleGroup;
+import id.ac.ui.cs.advprog.bidmart.auth.repository.PermissionRepository;
+import id.ac.ui.cs.advprog.bidmart.auth.repository.RoleGroupRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,7 @@ public class AuthService {
     private final JwtService jwtService; 
     private final MfaTotpService mfaTotpService;
     private final EmailService emailService;
+    private final RoleGroupRepository roleGroupRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Value("${app.auth.max-concurrent-sessions:3}")
@@ -61,6 +65,9 @@ public class AuthService {
             .verificationToken(token)
             .isEnabled(false) 
             .build();
+
+        roleGroupRepository.findByName(assignedRole.name()).ifPresent(rg ->
+                user.setRoleGroups(java.util.Set.of(rg)));
 
         userRepository.save(user);
 

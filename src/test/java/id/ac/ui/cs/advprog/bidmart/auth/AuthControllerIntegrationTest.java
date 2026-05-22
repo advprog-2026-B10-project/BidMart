@@ -2,8 +2,10 @@ package id.ac.ui.cs.advprog.bidmart.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.Role;
+import id.ac.ui.cs.advprog.bidmart.auth.entity.RoleGroup;
 import id.ac.ui.cs.advprog.bidmart.auth.entity.User;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.RefreshTokenRepository;
+import id.ac.ui.cs.advprog.bidmart.auth.repository.RoleGroupRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.service.MfaTotpService;
 import id.ac.ui.cs.advprog.bidmart.auth.service.EmailService;
@@ -25,6 +27,8 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -47,6 +51,9 @@ class AuthControllerIntegrationTest {
 
         @Autowired
         private RefreshTokenRepository refreshTokenRepository;
+
+        @Autowired
+        private RoleGroupRepository roleGroupRepository;
 
         @Autowired
         private MfaTotpService mfaTotpService;
@@ -604,6 +611,210 @@ class AuthControllerIntegrationTest {
 
                 User updatedTarget = userRepository.findById(target.getId()).orElseThrow();
                 org.junit.jupiter.api.Assertions.assertEquals(Role.SELLER, updatedTarget.getRole());
+        }
+
+        @Test
+        void adminUserListIncludesRoleGroups() throws Exception {
+                User admin = User.builder()
+                        .email("roleadmin@example.com")
+                        .password(passwordEncoder.encode("AdminPass!1"))
+                        .displayName("Role Admin")
+                        .role(Role.ADMIN)
+                        .isEnabled(true)
+                        .build();
+                userRepository.save(admin);
+
+                String token = loginAs(admin.getEmail(), "AdminPass!1");
+
+                mockMvc.perform(get("/api/auth/users")
+                                .header("Authorization", "Bearer " + token))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$[0].roleGroups").isArray());
+        }
+
+        @Test
+        void adminCanListPermissions() throws Exception {
+                User admin = User.builder()
+                        .email("permlist@example.com")
+                        .password(passwordEncoder.encode("AdminPass!1"))
+                        .displayName("Perm List Admin")
+                        .role(Role.ADMIN)
+                        .isEnabled(true)
+                        .build();
+                userRepository.save(admin);
+
+                String token = loginAs(admin.getEmail(), "AdminPass!1");
+
+                mockMvc.perform(get("/api/auth/admin/permissions")
+                                .header("Authorization", "Bearer " + token))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$[*].id").exists())
+                        .andExpect(jsonPath("$[*].name").exists());
+        }
+
+        @Test
+        void adminCanCreateAndDeletePermission() throws Exception {
+                User admin = User.builder()
+                        .email("permcrud@example.com")
+                        .password(passwordEncoder.encode("AdminPass!1"))
+                        .displayName("Perm CRUD Admin")
+                        .role(Role.ADMIN)
+                        .isEnabled(true)
+                        .build();
+                userRepository.save(admin);
+
+                String token = loginAs(admin.getEmail(), "AdminPass!1");
+
+                String createBody = """
+                        { "name": "test:perm" }
+                        """;
+
+                String responseBody = mockMvc.perform(post("/api/auth/admin/permissions")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(createBody))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.id").exists())
+                        .andExpect(jsonPath("$.name").value("test:perm"))
+                        .andReturn().getResponse().getContentAsString();
+
+                Long permId = objectMapper.readTree(responseBody).get("id").asLong();
+
+                mockMvc.perform(delete("/api/auth/admin/permissions/" + permId)
+                                .header("Authorization", "Bearer " + token))
+                        .andExpect(status().isOk());
+        }
+
+        @Test
+        void adminCanListRoleGroups() throws Exception {
+                User admin = User.builder()
+                        .email("rglist@example.com")
+                        .password(passwordEncoder.encode("AdminPass!1"))
+                        .displayName("RG List Admin")
+                        .role(Role.ADMIN)
+                        .isEnabled(true)
+                        .build();
+                userRepository.save(admin);
+
+                String token = loginAs(admin.getEmail(), "AdminPass!1");
+
+                mockMvc.perform(get("/api/auth/admin/role-groups")
+                                .header("Authorization", "Bearer " + token))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$[*].id").exists())
+                        .andExpect(jsonPath("$[*].name").exists())
+                        .andExpect(jsonPath("$[*].permissions").isArray());
+        }
+
+        @Test
+        void adminCanCreateUpdateAndDeleteRoleGroup() throws Exception {
+                User admin = User.builder()
+                        .email("rgcrud@example.com")
+                        .password(passwordEncoder.encode("AdminPass!1"))
+                        .displayName("RG CRUD Admin")
+                        .role(Role.ADMIN)
+                        .isEnabled(true)
+                        .build();
+                userRepository.save(admin);
+
+                String token = loginAs(admin.getEmail(), "AdminPass!1");
+
+                String createBody = """
+                        { "name": "TEST_ROLE" }
+                        """;
+
+                String responseBody = mockMvc.perform(post("/api/auth/admin/role-groups")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(createBody))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.id").exists())
+                        .andExpect(jsonPath("$.name").value("TEST_ROLE"))
+                        .andReturn().getResponse().getContentAsString();
+
+                Long rgId = objectMapper.readTree(responseBody).get("id").asLong();
+
+                String updateBody = """
+                        { "name": "TEST_ROLE_UPDATED", "permissionIds": [] }
+                        """;
+
+                mockMvc.perform(put("/api/auth/admin/role-groups/" + rgId)
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(updateBody))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.name").value("TEST_ROLE_UPDATED"));
+
+                mockMvc.perform(delete("/api/auth/admin/role-groups/" + rgId)
+                                .header("Authorization", "Bearer " + token))
+                        .andExpect(status().isOk());
+        }
+
+        @Test
+        void adminCanUpdateUserRoles() throws Exception {
+                User admin = User.builder()
+                        .email("userroleadmin@example.com")
+                        .password(passwordEncoder.encode("AdminPass!1"))
+                        .displayName("User Role Admin")
+                        .role(Role.ADMIN)
+                        .isEnabled(true)
+                        .build();
+                userRepository.save(admin);
+
+                User target = User.builder()
+                        .email("userroletarget@example.com")
+                        .password(passwordEncoder.encode("Password!1"))
+                        .displayName("Target User")
+                        .role(Role.BUYER)
+                        .isEnabled(true)
+                        .build();
+                target = userRepository.save(target);
+
+                String token = loginAs(admin.getEmail(), "AdminPass!1");
+
+                RoleGroup buyerRg = roleGroupRepository.findByName("BUYER").orElseThrow();
+
+                String rolesBody = """
+                        { "roleGroupIds": [%d] }
+                        """.formatted(buyerRg.getId());
+
+                mockMvc.perform(put("/api/auth/admin/users/" + target.getId() + "/roles")
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(rolesBody))
+                        .andExpect(status().isOk());
+        }
+
+        @Test
+        void nonAdminCannotManagePermissions() throws Exception {
+                User buyer = User.builder()
+                        .email("buyernoperm@example.com")
+                        .password(passwordEncoder.encode("Password!1"))
+                        .displayName("Buyer No Perm")
+                        .role(Role.BUYER)
+                        .isEnabled(true)
+                        .build();
+                userRepository.save(buyer);
+
+                String token = loginAs(buyer.getEmail(), "Password!1");
+
+                mockMvc.perform(get("/api/auth/admin/permissions")
+                                .header("Authorization", "Bearer " + token))
+                        .andExpect(status().isForbidden());
+        }
+
+        private String loginAs(String email, String password) throws Exception {
+                String loginPayload = """
+                        { "email": "%s", "password": "%s" }
+                        """.formatted(email, password);
+
+                String responseBody = mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(loginPayload))
+                        .andExpect(status().isOk())
+                        .andReturn().getResponse().getContentAsString();
+
+                return objectMapper.readTree(responseBody).get("token").asText();
         }
 
         @Nested
