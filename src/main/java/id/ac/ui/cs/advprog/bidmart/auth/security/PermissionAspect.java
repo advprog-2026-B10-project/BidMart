@@ -21,6 +21,14 @@ public class PermissionAspect {
             throw new AccessDeniedException("Authentication required");
         }
 
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> a.equals("ROLE_ADMIN"));
+
+        if (isAdmin) {
+            return;
+        }
+
         String required = requiresPermission.value();
         boolean hasPermission = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)

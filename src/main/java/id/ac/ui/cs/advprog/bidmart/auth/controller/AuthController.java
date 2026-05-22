@@ -4,6 +4,7 @@ import id.ac.ui.cs.advprog.bidmart.auth.dto.*;
 
 import id.ac.ui.cs.advprog.bidmart.auth.service.AuthService;
 import id.ac.ui.cs.advprog.bidmart.auth.service.AdminPermissionService;
+import id.ac.ui.cs.advprog.bidmart.auth.security.RequiresPermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -46,16 +47,19 @@ public class AuthController {
     }
 
     @GetMapping("/users")
+    @RequiresPermission("user:manage")
     public ResponseEntity<List<AdminUserResponse>> getAllUsers() {
         return ResponseEntity.ok(authService.getAdminUsers());
     }
 
     @PostMapping("/admin/users/{id}/sessions/revoke")
+    @RequiresPermission("user:manage")
     public ResponseEntity<AdminSessionRevokeResponse> revokeUserSessions(@PathVariable Long id) {
         return ResponseEntity.ok(authService.revokeUserSessions(id));
     }
 
     @PatchMapping("/admin/users/{id}/role")
+    @RequiresPermission("user:manage")
     public ResponseEntity<AdminUserResponse> updateUserRole(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRoleRequest request,
@@ -65,38 +69,45 @@ public class AuthController {
     }
 
     @PostMapping("/admin/users/{id}/disable")
+    @RequiresPermission("user:disable")
     public ResponseEntity<String> disableUser(@PathVariable Long id) {
         authService.disableUser(id);
         return ResponseEntity.ok("User disabled successfully and all sessions revoked.");
     }
 
     @GetMapping("/admin/permissions")
+    @RequiresPermission("role:manage")
     public ResponseEntity<List<PermissionResponse>> getAllPermissions() {
         return ResponseEntity.ok(adminPermissionService.getAllPermissions());
     }
 
     @PostMapping("/admin/permissions")
+    @RequiresPermission("role:manage")
     public ResponseEntity<PermissionResponse> createPermission(@Valid @RequestBody CreatePermissionRequest request) {
         return ResponseEntity.ok(adminPermissionService.createPermission(request));
     }
 
     @DeleteMapping("/admin/permissions/{id}")
+    @RequiresPermission("role:manage")
     public ResponseEntity<String> deletePermission(@PathVariable Long id) {
         adminPermissionService.deletePermission(id);
         return ResponseEntity.ok("Permission deleted successfully.");
     }
 
     @GetMapping("/admin/role-groups")
+    @RequiresPermission("role:manage")
     public ResponseEntity<List<RoleGroupResponse>> getAllRoleGroups() {
         return ResponseEntity.ok(adminPermissionService.getAllRoleGroups());
     }
 
     @PostMapping("/admin/role-groups")
+    @RequiresPermission("role:manage")
     public ResponseEntity<RoleGroupResponse> createRoleGroup(@Valid @RequestBody CreateRoleGroupRequest request) {
         return ResponseEntity.ok(adminPermissionService.createRoleGroup(request));
     }
 
     @PutMapping("/admin/role-groups/{id}")
+    @RequiresPermission("role:manage")
     public ResponseEntity<RoleGroupResponse> updateRoleGroup(
             @PathVariable Long id,
             @Valid @RequestBody UpdateRoleGroupRequest request) {
@@ -104,12 +115,14 @@ public class AuthController {
     }
 
     @DeleteMapping("/admin/role-groups/{id}")
+    @RequiresPermission("role:manage")
     public ResponseEntity<String> deleteRoleGroup(@PathVariable Long id) {
         adminPermissionService.deleteRoleGroup(id);
         return ResponseEntity.ok("Role group deleted successfully.");
     }
 
     @PutMapping("/admin/users/{id}/roles")
+    @RequiresPermission("role:manage")
     public ResponseEntity<String> updateUserRoles(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRolesRequest request) {
@@ -118,12 +131,14 @@ public class AuthController {
     }
 
     @GetMapping("/profile")
+    @RequiresPermission("profile:view")
     public ResponseEntity<ProfileResponse> getProfile(Authentication authentication) {
         ProfileResponse response = authService.getProfile(authentication.getName());
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/profile")
+    @RequiresPermission("profile:edit")
     public ResponseEntity<ProfileResponse> updateProfile(
             Authentication authentication,
             @Valid @RequestBody UpdateProfileRequest request

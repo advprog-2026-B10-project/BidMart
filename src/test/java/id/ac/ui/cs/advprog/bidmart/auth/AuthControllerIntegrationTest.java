@@ -64,6 +64,11 @@ class AuthControllerIntegrationTest {
         userRepository.deleteAll();
     }
 
+    private User saveWithRoleGroup(User user, String roleGroupName) {
+        roleGroupRepository.findByName(roleGroupName).ifPresent(rg -> user.setRoleGroups(java.util.Set.of(rg)));
+        return userRepository.save(user);
+    }
+
     @Test
     void registerValidationErrorReturnsStandardSchema() throws Exception {
         String payload = """
@@ -251,24 +256,24 @@ class AuthControllerIntegrationTest {
 
         @Test
         void getProfileWithTokenReturnsCurrentUserProfile() throws Exception {
-                User seller = User.builder()
-                                .email("seller@example.com")
-                                .password(passwordEncoder.encode("Password!1"))
-                                .displayName("Seller One")
-                                .phoneNumber("+628123456789")
-                                .role(Role.SELLER)
-                                .isEnabled(true)
-                                .build();
-                userRepository.save(seller);
+        User seller = User.builder()
+                .email("seller@example.com")
+                .password(passwordEncoder.encode("Password!1"))
+                .displayName("Seller One")
+                .phoneNumber("+628123456789")
+                .role(Role.SELLER)
+                .isEnabled(true)
+                .build();
+        saveWithRoleGroup(seller, "SELLER");
 
-                String loginPayload = """
-                        {
-                            "email": "seller@example.com",
-                            "password": "Password!1"
-                        }
-                        """;
+        String loginPayload = """
+                {
+                    "email": "seller@example.com",
+                    "password": "Password!1"
+                }
+                """;
 
-                String responseBody = mockMvc.perform(post("/api/auth/login")
+        String responseBody = mockMvc.perform(post("/api/auth/login")
                                                 .contentType(MediaType.APPLICATION_JSON)
                                                 .content(loginPayload))
                                 .andExpect(status().isOk())
@@ -276,9 +281,9 @@ class AuthControllerIntegrationTest {
                                 .getResponse()
                                 .getContentAsString();
 
-                String token = objectMapper.readTree(responseBody).get("token").asText();
+        String token = objectMapper.readTree(responseBody).get("token").asText();
 
-                mockMvc.perform(get("/api/auth/profile")
+        mockMvc.perform(get("/api/auth/profile")
                                                 .header("Authorization", "Bearer " + token))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.email").value("seller@example.com"))
@@ -297,7 +302,7 @@ class AuthControllerIntegrationTest {
                                 .role(Role.BUYER)
                                 .isEnabled(true)
                                 .build();
-                userRepository.save(buyer);
+                saveWithRoleGroup(buyer, "BUYER");
 
                 String loginPayload = """
                         {
@@ -345,7 +350,7 @@ class AuthControllerIntegrationTest {
                                 .role(Role.BUYER)
                                 .isEnabled(true)
                                 .build();
-                userRepository.save(buyer);
+                saveWithRoleGroup(buyer, "BUYER");
 
                 String loginPayload = """
                         {
