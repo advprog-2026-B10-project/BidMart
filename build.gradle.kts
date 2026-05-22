@@ -1,8 +1,11 @@
 plugins {
 	java
 	jacoco
+	pmd
+	checkstyle
 	id("org.springframework.boot") version "3.5.11"
 	id("io.spring.dependency-management") version "1.1.7"
+	id("net.serenity-bdd.serenity-gradle-plugin") version "4.1.3"
 }
 
 group = "id.ac.ui.cs.advprog"
@@ -45,6 +48,12 @@ dependencies {
 	testImplementation("com.h2database:h2")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	runtimeOnly("org.postgresql:postgresql")
+
+	testImplementation("net.serenity-bdd:serenity-core:4.1.3")
+	testImplementation("net.serenity-bdd:serenity-junit5:4.1.3")
+	testImplementation("net.serenity-bdd:serenity-spring:4.1.3")
+	testImplementation("net.serenity-bdd:serenity-screenplay:4.1.3")
+	testImplementation("net.serenity-bdd:serenity-screenplay-webdriver:4.1.3")
 }
 
 tasks.withType<Test> {
@@ -58,5 +67,29 @@ tasks.jacocoTestReport {
 		xml.required.set(false)
 		csv.required.set(false)
 		html.outputLocation.set(layout.buildDirectory.dir("jacocoHtml"))
+	}
+}
+
+pmd {
+	isIgnoreFailures = true
+	toolVersion = "6.55.0"
+}
+
+tasks.withType<pmd.Pmd> {
+	reports {
+		xml.required.set(false)
+		html.required.set(true)
+	}
+}
+
+checkstyle {
+	isIgnoreFailures = true
+	toolVersion = "10.15.0"
+}
+
+tasks.withType<checkstyle.Checkstyle> {
+	reports {
+		xml.required.set(false)
+		html.required.set(true)
 	}
 }
