@@ -4,6 +4,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
@@ -20,8 +22,15 @@ import java.util.stream.Collectors;
 @Service
 public class JwtService {
 
-    private final String SECRET_KEY = "BidMart_Super_Secret_Key_For_AdPro_2026_Semester_4";
-    private final SecretKey SIGNING_KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+    @Value("${app.jwt.secret}")
+    private String secretKey;
+
+    private SecretKey signingKey;
+
+    @PostConstruct
+    public void init() {
+        this.signingKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+    }
 
     // Access token: 15 minutes (900 seconds)
     private static final long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 15;
@@ -41,7 +50,7 @@ public class JwtService {
             .id(UUID.randomUUID().toString())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION))
-                .signWith(SIGNING_KEY)
+                .signWith(signingKey)
                 .compact();
     }
 
@@ -52,7 +61,7 @@ public class JwtService {
             .id(UUID.randomUUID().toString())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION))
-                .signWith(SIGNING_KEY)
+                .signWith(signingKey)
                 .compact();
     }
 
@@ -63,13 +72,13 @@ public class JwtService {
             .id(UUID.randomUUID().toString())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + MFA_CHALLENGE_EXPIRATION))
-                .signWith(SIGNING_KEY)
+                .signWith(signingKey)
                 .compact();
     }
 
     public String extractEmail(String token) {
         return Jwts.parser()
-                .verifyWith(SIGNING_KEY)
+                .verifyWith(signingKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
@@ -78,7 +87,7 @@ public class JwtService {
 
     public List<String> extractRoles(String token) {
         Claims claims = Jwts.parser()
-                .verifyWith(SIGNING_KEY) 
+                .verifyWith(signingKey) 
                 .build()
                 .parseSignedClaims(token) 
                 .getPayload();           
@@ -96,7 +105,7 @@ public class JwtService {
     public boolean isTokenValid(String token) {
         try {
             Jwts.parser()
-                    .verifyWith(SIGNING_KEY)
+                    .verifyWith(signingKey)
                     .build()
                     .parseSignedClaims(token);
             return true;
@@ -108,7 +117,7 @@ public class JwtService {
     public boolean isMfaChallengeTokenValid(String token) {
         try {
             Claims claims = Jwts.parser()
-                    .verifyWith(SIGNING_KEY)
+                    .verifyWith(signingKey)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
