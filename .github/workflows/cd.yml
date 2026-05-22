@@ -44,8 +44,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/bidmart
-            pkill -f 'java -jar' || true
+            pkill -f 'java.*\.jar' || true
             rm -f *-plain.jar
-            nohup java -jar *.jar > app.log 2>&1 </dev/null &
-            sleep 5
+            nohup java -Xmx300m -Xms150m -jar *.jar > app.log 2>&1 </dev/null &
+            sleep 10
             exit 0
