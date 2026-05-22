@@ -39,8 +39,8 @@ class ActuatorEndpointIntegrationTest {
     }
 
     @Test
-    void metricsEndpoint_isNotExposed() throws Exception {
+    void metricsEndpoint_isExposed() throws Exception {
         mockMvc.perform(get("/actuator/metrics"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 }
