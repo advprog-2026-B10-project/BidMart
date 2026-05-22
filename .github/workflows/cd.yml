@@ -45,6 +45,7 @@ jobs:
             cd /home/ubuntu/bidmart
             pkill -f 'java.*\.jar' || true
             rm -f *-plain.jar
+            export APP_FRONTEND_URL=https://bidmart-pi.vercel.app
             nohup java -Xmx300m -Xms150m -jar $(ls *.jar | head -n 1) > /home/ubuntu/bidmart/app.log 2>&1 &
             
             if [ ! -d /home/ubuntu/prometheus ]; then
