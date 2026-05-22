@@ -292,4 +292,95 @@ class OrderServiceTransitionsTest {
                 () -> service.disputeOrder(1L, "buyer@x", "   "));
         verify(orderRepository, never()).save(any());
     }
+
+    // --- adminRefund ---
+
+    @Test
+    void adminRefund_fromDisputed_setsRefunded() {
+        Order existing = order(1L, OrderStatus.DISPUTED);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(orderRepository.save(any(Order.class))).thenAnswer(i -> i.getArgument(0));
+
+        Order result = service.adminRefund(1L);
+
+        assertEquals(OrderStatus.REFUNDED, result.getStatus());
+        assertNotNull(result.getRefundedAt());
+        verify(notificationService).send(
+                eq("seller@x"),
+                eq(NotificationType.ORDER_REFUNDED),
+                anyString(),
+                anyString(),
+                eq("1"));
+    }
+
+    @Test
+    void adminRefund_rejectsNonDisputed() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order(1L, OrderStatus.SHIPPED)));
+
+        assertThrows(IllegalStateException.class, () -> service.adminRefund(1L));
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void adminRefund_missingOrder_throwsNoSuchElement() {
+        when(orderRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () -> service.adminRefund(99L));
+    }
+
+    // --- adminRelease ---
+
+    @Test
+    void adminRelease_fromDisputed_setsDelivered() {
+        Order existing = order(1L, OrderStatus.DISPUTED);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(orderRepository.save(any(Order.class))).thenAnswer(i -> i.getArgument(0));
+
+        Order result = service.adminRelease(1L);
+
+        assertEquals(OrderStatus.DELIVERED, result.getStatus());
+        assertNotNull(result.getDeliveredAt());
+        verify(notificationService).send(
+                eq("seller@x"),
+                eq(NotificationType.ORDER_RELEASED),
+                anyString(),
+                anyString(),
+                eq("1"));
+    }
+
+    @Test
+    void adminRelease_rejectsNonDisputed() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order(1L, OrderStatus.SHIPPED)));
+
+        assertThrows(IllegalStateException.class, () -> service.adminRelease(1L));
+        verify(orderRepository, never()).save(any());
+    }
+
+    // --- autoDeliverOrder ---
+
+    @Test
+    void autoDeliverOrder_fromShipped_setsDelivered() {
+        Order existing = order(1L, OrderStatus.SHIPPED);
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(orderRepository.save(any(Order.class))).thenAnswer(i -> i.getArgument(0));
+
+        Order result = service.autoDeliverOrder(1L);
+
+        assertEquals(OrderStatus.DELIVERED, result.getStatus());
+        assertNotNull(result.getDeliveredAt());
+        verify(notificationService).send(
+                eq("seller@x"),
+                eq(NotificationType.ORDER_DELIVERED),
+                anyString(),
+                anyString(),
+                eq("1"));
+    }
+
+    @Test
+    void autoDeliverOrder_rejectsNonShipped() {
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order(1L, OrderStatus.CONFIRMED)));
+
+        assertThrows(IllegalStateException.class, () -> service.autoDeliverOrder(1L));
+        verify(orderRepository, never()).save(any());
+    }
 }

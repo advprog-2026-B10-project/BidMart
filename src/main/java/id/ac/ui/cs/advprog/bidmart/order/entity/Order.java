@@ -62,6 +62,9 @@ public class Order {
     @Column(name = "disputed_at")
     private LocalDateTime disputedAt;
 
+    @Column(name = "refunded_at")
+    private LocalDateTime refundedAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

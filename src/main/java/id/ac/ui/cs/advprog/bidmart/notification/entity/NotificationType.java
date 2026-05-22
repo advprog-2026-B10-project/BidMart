@@ -9,6 +9,8 @@ public enum NotificationType {
     ORDER_SHIPPED,
     ORDER_DELIVERED,
     ORDER_DISPUTED,
+    ORDER_REFUNDED,
+    ORDER_RELEASED,
     ORDER_UPDATE,
     NEW_BID,
     TRANSACTION,
