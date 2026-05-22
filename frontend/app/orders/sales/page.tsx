@@ -55,6 +55,7 @@ function statusColor(status: string): string {
     case 'SHIPPED': return 'bg-purple-500/20 text-purple-300 border-purple-500/40';
     case 'DELIVERED': return 'bg-green-500/20 text-green-300 border-green-500/40';
     case 'DISPUTED': return 'bg-orange-500/20 text-orange-300 border-orange-500/40';
+    case 'REFUNDED': return 'bg-pink-500/20 text-pink-300 border-pink-500/40';
     case 'CANCELLED': return 'bg-red-500/20 text-red-300 border-red-500/40';
     default: return 'bg-gray-500/20 text-gray-300 border-gray-500/40';
   }

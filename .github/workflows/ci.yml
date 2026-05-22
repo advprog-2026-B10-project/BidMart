@@ -23,5 +23,26 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build and test
-        run: ./gradlew build
+      - name: Build, test, and analyze
+        run: ./gradlew build jacocoTestReport pmdMain pmdTest checkstyleMain checkstyleTest --continue
+
+      - name: Upload JaCoCo Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: build/jacocoHtml/
+
+      - name: Upload PMD Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pmd-report
+          path: build/reports/pmd/
+
+      - name: Upload Checkstyle Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkstyle-report
+          path: build/reports/checkstyle/

@@ -24,6 +24,7 @@ public class OrderResponse {
     private LocalDateTime shippedAt;
     private LocalDateTime deliveredAt;
     private LocalDateTime disputedAt;
+    private LocalDateTime refundedAt;
 
     public static OrderResponse from(Order o) {
         return new OrderResponse(
@@ -41,6 +42,7 @@ public class OrderResponse {
                 o.getConfirmedAt(),
                 o.getShippedAt(),
                 o.getDeliveredAt(),
-                o.getDisputedAt());
+                o.getDisputedAt(),
+                o.getRefundedAt());
     }
 }

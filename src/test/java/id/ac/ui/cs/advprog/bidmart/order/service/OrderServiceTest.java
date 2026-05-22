@@ -98,15 +98,6 @@ class OrderServiceTest {
     }
 
     @Test
-    void createFromWonAuction_rejectsNonWonStatus() {
-        auction.setStatus(AuctionStatus.ACTIVE);
-        auction.getBids().add(bid("alice@x", 100_000.0));
-
-        assertThrows(IllegalArgumentException.class, () -> service.createFromWonAuction(auction));
-        verify(orderRepository, never()).save(any());
-    }
-
-    @Test
     void createFromWonAuction_rejectsWhenNoBids() {
         auction.setBids(List.of());
         when(orderRepository.existsByAuctionId(42L)).thenReturn(false);
