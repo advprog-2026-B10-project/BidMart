@@ -33,6 +33,9 @@ public class AuthService {
     @Value("${app.auth.max-concurrent-sessions:3}")
     private int maxConcurrentSessions;
 
+    @Value("${app.auth.session-policy:revoke_oldest}")
+    private String sessionPolicy;
+
     public void register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AuthException(HttpStatus.CONFLICT, "Email already registered");
@@ -345,6 +348,11 @@ public class AuthService {
 
         if (overflow <= 0) {
             return;
+        }
+
+        if ("reject_new".equals(sessionPolicy)) {
+            throw new AuthException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Maximum concurrent sessions (" + maxConcurrentSessions + ") reached. Please log out from another device first.");
         }
 
         for (int i = 0; i < overflow && i < activeSessions.size(); i++) {

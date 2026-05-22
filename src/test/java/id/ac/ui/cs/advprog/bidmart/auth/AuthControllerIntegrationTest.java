@@ -8,6 +8,7 @@ import id.ac.ui.cs.advprog.bidmart.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.bidmart.auth.service.MfaTotpService;
 import id.ac.ui.cs.advprog.bidmart.auth.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -15,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -602,5 +604,66 @@ class AuthControllerIntegrationTest {
 
                 User updatedTarget = userRepository.findById(target.getId()).orElseThrow();
                 org.junit.jupiter.api.Assertions.assertEquals(Role.SELLER, updatedTarget.getRole());
+        }
+
+        @Nested
+        @SpringBootTest
+        @AutoConfigureMockMvc
+        @TestPropertySource(properties = "app.auth.session-policy=reject_new")
+        class RejectSessionPolicyTest {
+
+                @Autowired
+                private MockMvc mockMvc;
+
+                @Autowired
+                private UserRepository userRepository;
+
+                @Autowired
+                private PasswordEncoder passwordEncoder;
+
+                @Autowired
+                private RefreshTokenRepository refreshTokenRepository;
+
+                @Autowired
+                @MockBean
+                private EmailService emailServiceMock;
+
+                @Test
+                void loginWithRejectPolicyRefusesExcessSessions() throws Exception {
+                        User user = User.builder()
+                                .email("reject-user@example.com")
+                                .password(passwordEncoder.encode("Password!1"))
+                                .displayName("Reject User")
+                                .role(Role.BUYER)
+                                .isEnabled(true)
+                                .build();
+                        userRepository.save(user);
+
+                        String loginPayload = """
+                                {
+                                    "email": "reject-user@example.com",
+                                    "password": "Password!1"
+                                }
+                                """;
+
+                        for (int i = 0; i < 3; i++) {
+                                mockMvc.perform(post("/api/auth/login")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(loginPayload))
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$.token").exists())
+                                        .andExpect(jsonPath("$.refreshToken").exists());
+                        }
+
+                        mockMvc.perform(post("/api/auth/login")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(loginPayload))
+                                .andExpect(status().isTooManyRequests())
+                                .andExpect(jsonPath("$.message").value(
+                                        "Maximum concurrent sessions (3) reached. Please log out from another device first."));
+
+                        long activeSessions = refreshTokenRepository.countActiveSessionsByEmail("reject-user@example.com");
+                        org.junit.jupiter.api.Assertions.assertEquals(3, activeSessions);
+                }
         }
 }
