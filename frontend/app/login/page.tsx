@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -47,6 +48,19 @@ export default function LoginPage() {
       setError(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResending(true);
+    try {
+      await axios.post('http://localhost:8080/api/auth/resend-verification', { email });
+      setInfo('A new verification link has been sent to your email.');
+      setError('');
+    } catch {
+      setInfo('');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -86,6 +100,15 @@ export default function LoginPage() {
         {error && (
           <div className="bg-red-500/10 border border-red-500 text-red-500 text-sm p-3 rounded-lg mb-6">
             {error}
+            {error.includes('verify your email') && (
+              <button
+                onClick={handleResendVerification}
+                disabled={resending}
+                className="block mt-2 text-blue-400 hover:text-blue-300 underline text-xs"
+              >
+                {resending ? 'Sending...' : 'Resend verification email'}
+              </button>
+            )}
           </div>
         )}
 

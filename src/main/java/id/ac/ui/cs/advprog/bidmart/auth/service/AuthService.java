@@ -66,6 +66,22 @@ public class AuthService {
     }
 
     @Transactional
+    public void resendVerificationEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (user.isEnabled()) {
+            throw new AuthException(HttpStatus.BAD_REQUEST, "Account is already verified");
+        }
+
+        String token = UUID.randomUUID().toString();
+        user.setVerificationToken(token);
+        userRepository.save(user);
+
+        emailService.sendVerificationEmail(user.getEmail(), token);
+    }
+
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "User not found"));

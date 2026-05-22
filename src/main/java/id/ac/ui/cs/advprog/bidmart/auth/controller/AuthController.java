@@ -6,6 +6,7 @@ import id.ac.ui.cs.advprog.bidmart.auth.dto.LoginRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.ProfileResponse;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.RegisterRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.ForgotPasswordRequest;
+import id.ac.ui.cs.advprog.bidmart.auth.dto.ResendVerificationRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.ResetPasswordRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.UpdateProfileRequest;
 import id.ac.ui.cs.advprog.bidmart.auth.dto.RefreshTokenRequest;
@@ -99,6 +100,12 @@ public class AuthController {
     public ResponseEntity<String> logout(Authentication authentication) {
         authService.logout(authentication.getName());
         return ResponseEntity.ok("Logged out successfully");
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        authService.resendVerificationEmail(request.getEmail());
+        return ResponseEntity.ok("If the email is registered and not verified, a new verification link has been sent.");
     }
 
     @PostMapping("/forgot-password")
