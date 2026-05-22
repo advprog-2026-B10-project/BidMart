@@ -257,6 +257,30 @@ public class AuthService {
         return AdminUserResponse.fromUser(user, refreshTokenRepository.countActiveSessionsByEmail(user.getEmail()));
     }
 
+    public List<UserSessionResponse> getUserSessions(String email) {
+        return refreshTokenRepository.findActiveSessionsByEmail(email)
+                .stream()
+                .map(rt -> UserSessionResponse.builder()
+                        .id(rt.getId())
+                        .createdAt(rt.getCreatedAt())
+                        .expiresAt(rt.getExpiresAt())
+                        .build())
+                .toList();
+    }
+
+    @Transactional
+    public void revokeSession(Long sessionId, String email) {
+        RefreshToken token = refreshTokenRepository.findById(sessionId)
+                .orElseThrow(() -> new AuthException(HttpStatus.NOT_FOUND, "Session not found"));
+
+        if (!token.getEmail().equals(email)) {
+            throw new AuthException(HttpStatus.FORBIDDEN, "You can only revoke your own sessions");
+        }
+
+        token.setRevoked(true);
+        refreshTokenRepository.save(token);
+    }
+
     @Transactional
     public void logout(String email) {
         refreshTokenRepository.deleteByEmail(email);

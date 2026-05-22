@@ -159,6 +159,17 @@ public class AuthController {
         return ResponseEntity.ok("Logged out successfully");
     }
 
+    @GetMapping("/sessions")
+    public ResponseEntity<List<UserSessionResponse>> getMySessions(Authentication authentication) {
+        return ResponseEntity.ok(authService.getUserSessions(authentication.getName()));
+    }
+
+    @DeleteMapping("/sessions/{id}")
+    public ResponseEntity<String> revokeSession(@PathVariable Long id, Authentication authentication) {
+        authService.revokeSession(id, authentication.getName());
+        return ResponseEntity.ok("Session revoked successfully");
+    }
+
     @PostMapping("/resend-verification")
     public ResponseEntity<String> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
         authService.resendVerificationEmail(request.getEmail());
