@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import axiosClient from '@/lib/axiosClient';
 import Link from 'next/link';
 
