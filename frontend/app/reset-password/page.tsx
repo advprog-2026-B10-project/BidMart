@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
+import { API_URL_WITH_API } from '@/lib/config';
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -37,7 +38,7 @@ function ResetPasswordContent() {
     setLoading(true);
 
     try {
-      await axios.post('http://localhost:8080/api/auth/reset-password', {
+      await axios.post(`${API_URL_WITH_API}/auth/reset-password`, {
         token,
         newPassword,
       });

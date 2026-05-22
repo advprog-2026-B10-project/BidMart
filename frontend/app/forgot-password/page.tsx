@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
+import { API_URL_WITH_API } from '@/lib/config';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -14,7 +15,7 @@ export default function ForgotPasswordPage() {
     setStatus({ type: '', message: '' });
 
     try {
-      await axios.post('http://localhost:8080/api/auth/forgot-password', { email });
+      await axios.post(`${API_URL_WITH_API}/auth/forgot-password`, { email });
       setStatus({ type: 'success', message: 'If the email is registered, a password reset link has been sent.' });
     } catch {
       setStatus({ type: 'success', message: 'If the email is registered, a password reset link has been sent.' });

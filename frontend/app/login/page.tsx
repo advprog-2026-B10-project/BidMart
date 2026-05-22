@@ -4,6 +4,7 @@ import axios from 'axios';
 import axiosClient from '@/lib/axiosClient';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { API_URL_WITH_API } from '@/lib/config';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -54,7 +55,7 @@ export default function LoginPage() {
   const handleResendVerification = async () => {
     setResending(true);
     try {
-      await axios.post('http://13.221.75.220:8080/api/auth/resend-verification', { email });
+      await axios.post(`${API_URL_WITH_API}/auth/resend-verification`, { email });
       setInfo('A new verification link has been sent to your email.');
       setError('');
     } catch {

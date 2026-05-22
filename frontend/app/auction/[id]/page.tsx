@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { API_URL } from '@/lib/config';
 
 interface Bid {
     buyerId: string;
@@ -61,7 +62,7 @@ export default function AuctionDetailPage() {
 
     const fetchAuction = async () => {
         try {
-            const res = await fetch(`http://localhost:8080/api/bidding/auctions/${id}`, {
+            const res = await fetch(`${API_URL}/api/bidding/auctions/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) throw new Error('Auction tidak ditemukan');
@@ -80,7 +81,7 @@ export default function AuctionDetailPage() {
         setBidStatus({ msg: '', isError: false });
         try {
             const res = await fetch(
-                `http://localhost:8080/api/bidding/bid?userId=${email}&auctionId=${auction.id}&amount=${bidAmount}`,
+                `${API_URL}/api/bidding/bid?userId=${email}&auctionId=${auction.id}&amount=${bidAmount}`,
                 {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${token}` },

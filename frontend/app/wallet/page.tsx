@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import WalletCard from './WalletCard';
 import AdminTransactionList from './AdminTransactionList';
 import Link from 'next/link';
+import { API_URL } from '@/lib/config';
 
 export default function WalletPage() {
     const [role, setRole] = useState<'seller' | 'buyer' | null>(null);
@@ -14,7 +15,7 @@ export default function WalletPage() {
                 const token = localStorage.getItem('token');
                 if (!token) return;
 
-                const res = await fetch('http://localhost:8080/api/auth/profile', {
+                const res = await fetch(`${API_URL}/api/auth/profile`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

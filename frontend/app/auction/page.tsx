@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { API_URL } from '@/lib/config';
 
 interface Auction {
     id: number;
@@ -40,7 +41,7 @@ export default function AuctionListPage() {
 
     const fetchAuctions = async () => {
         try {
-            const res = await fetch('http://localhost:8080/api/bidding/auctions', {
+            const res = await fetch(`${API_URL}/api/bidding/auctions`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) throw new Error('Gagal memuat auction');

@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authHeaders } from '@/lib/authUtils';
+import { API_URL } from '@/lib/config';
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = API_URL;
 
 interface PreferenceState {
   inAppEnabled: boolean;
