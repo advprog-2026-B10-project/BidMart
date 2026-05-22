@@ -64,7 +64,7 @@ jobs:
                   - targets: ['localhost:8080']
             PROMETHEUS_EOF
             
-            pkill -f 'prometheus' || true
+            pkill -x prometheus || true
             nohup /home/ubuntu/prometheus/prometheus --config.file=/home/ubuntu/prometheus/prometheus.yml --web.listen-address=":9090" > /home/ubuntu/prometheus.log 2>&1 &
             
             sleep 5
