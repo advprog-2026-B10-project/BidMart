@@ -101,3 +101,7 @@ tasks.withType<Checkstyle> {
 		html.required.set(true)
 	}
 }
+
+tasks.matching { it.name == "checkOutcomes" }.configureEach {
+    mustRunAfter(tasks.matching { it.name == "clearReports" })
+}
