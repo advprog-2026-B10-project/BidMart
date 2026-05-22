@@ -1,7 +1,6 @@
 package id.ac.ui.cs.advprog.bidmart.order.service;
 
 import id.ac.ui.cs.advprog.bidmart.bidding.entity.Auction;
-import id.ac.ui.cs.advprog.bidmart.bidding.entity.AuctionStatus;
 import id.ac.ui.cs.advprog.bidmart.bidding.entity.Bid;
 import id.ac.ui.cs.advprog.bidmart.notification.entity.NotificationType;
 import id.ac.ui.cs.advprog.bidmart.notification.service.NotificationService;
@@ -27,9 +26,6 @@ public class OrderService {
 
     @Transactional
     public Optional<Order> createFromWonAuction(Auction auction) {
-        if (auction.getStatus() != AuctionStatus.WON) {
-            throw new IllegalArgumentException("Auction must be WON to create order, was " + auction.getStatus());
-        }
         if (orderRepository.existsByAuctionId(auction.getId())) {
             return Optional.empty();
         }
