@@ -46,6 +46,7 @@ jobs:
             cd /home/ubuntu/bidmart
             pkill -f 'java.*\.jar' || true
             rm -f *-plain.jar
-            nohup java -Xmx300m -Xms150m -jar *.jar > app.log 2>&1 </dev/null &
-            sleep 10
+            echo "java -Xmx300m -Xms150m -jar \$(ls *.jar | head -n 1) > app.log 2>&1" > run.sh
+            chmod +x run.sh
+            nohup ./run.sh </dev/null >/dev/null 2>&1 &
             exit 0
