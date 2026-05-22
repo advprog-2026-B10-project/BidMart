@@ -43,7 +43,8 @@ public class Catalog {
     @Transient
     private String sellerName;
 
-    public Catalog() {}
+    public Catalog() {
+    }
 
     public Catalog(String judul, String deskripsi, String gambar, Category category, Double hargaAwal, Double hargaCadangan, Integer durasiLelang, String sellerId) {
         this.judul = judul;

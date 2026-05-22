@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.bidmart.bidding.dto;
 
+import id.ac.ui.cs.advprog.bidmart.bidding.entity.AuctionType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,4 +12,5 @@ public class CreateAuctionRequest {
     private Double reservePrice;
     private Integer durationInMinutes;
     private String sellerId;
+    private AuctionType type;
 }
