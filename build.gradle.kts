@@ -80,7 +80,7 @@ tasks.jacocoTestReport {
 
 pmd {
 	isIgnoreFailures = true
-	toolVersion = "6.55.0"
+	toolVersion = "7.0.0"
 }
 
 tasks.withType<Pmd> {
