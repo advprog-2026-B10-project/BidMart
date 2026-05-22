@@ -22,6 +22,7 @@ interface OrderDetail {
   shippedAt: string | null;
   deliveredAt: string | null;
   disputedAt: string | null;
+  refundedAt: string | null;
 }
 
 interface UiStatus {
@@ -63,6 +64,7 @@ function statusColor(status: string): string {
     case 'SHIPPED': return 'bg-purple-500/20 text-purple-300 border-purple-500/40';
     case 'DELIVERED': return 'bg-green-500/20 text-green-300 border-green-500/40';
     case 'DISPUTED': return 'bg-orange-500/20 text-orange-300 border-orange-500/40';
+    case 'REFUNDED': return 'bg-pink-500/20 text-pink-300 border-pink-500/40';
     case 'CANCELLED': return 'bg-red-500/20 text-red-300 border-red-500/40';
     default: return 'bg-gray-500/20 text-gray-300 border-gray-500/40';
   }
@@ -209,6 +211,11 @@ export default function OrderDetailPage() {
               <span className="text-xs text-orange-300">Alasan: {order.disputeReason}</span>
             )}
           </div>
+          {order.status === 'REFUNDED' && (
+            <div className="mb-4 p-3 rounded-lg border border-pink-500/40 bg-pink-500/10 text-pink-300 text-sm">
+              Admin menyetujui klaim sengketa. Pesanan direfund.
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <div><span className="text-gray-500">Buyer:</span> <span className="text-gray-200">{order.buyerId}</span></div>
             <div><span className="text-gray-500">Seller:</span> <span className="text-gray-200">{order.sellerId}</span></div>
@@ -218,6 +225,9 @@ export default function OrderDetailPage() {
             <div><span className="text-gray-500">Diterima:</span> <span className="text-gray-200">{formatDate(order.deliveredAt)}</span></div>
             {order.disputedAt && (
               <div><span className="text-gray-500">Disengketakan:</span> <span className="text-gray-200">{formatDate(order.disputedAt)}</span></div>
+            )}
+            {order.refundedAt && (
+              <div><span className="text-gray-500">Direfund:</span> <span className="text-gray-200">{formatDate(order.refundedAt)}</span></div>
             )}
             {order.trackingNumber && (
               <div><span className="text-gray-500">Resi:</span> <span className="text-gray-200 font-mono">{order.trackingNumber}</span></div>
