@@ -1,3 +1,6 @@
+import org.gradle.api.plugins.quality.Pmd
+import org.gradle.api.plugins.quality.Checkstyle
+
 plugins {
 	java
 	jacoco
@@ -75,7 +78,7 @@ pmd {
 	toolVersion = "6.55.0"
 }
 
-tasks.withType<pmd.Pmd> {
+tasks.withType<Pmd> {
 	reports {
 		xml.required.set(false)
 		html.required.set(true)
@@ -87,7 +90,7 @@ checkstyle {
 	toolVersion = "10.15.0"
 }
 
-tasks.withType<checkstyle.Checkstyle> {
+tasks.withType<Checkstyle> {
 	reports {
 		xml.required.set(false)
 		html.required.set(true)
