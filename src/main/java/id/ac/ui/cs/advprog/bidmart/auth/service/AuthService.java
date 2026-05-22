@@ -288,6 +288,14 @@ public class AuthService {
             user.setPhoneNumber(request.getPhoneNumber().trim());
         }
 
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(request.getAvatarUrl().trim());
+        }
+
+        if (request.getShippingAddress() != null) {
+            user.setShippingAddress(request.getShippingAddress().trim());
+        }
+
         userRepository.save(user);
         return ProfileResponse.fromUser(user);
     }

@@ -39,6 +39,11 @@ public class User implements UserDetails {
 
     private String phoneNumber;
 
+    private String avatarUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String shippingAddress;
+
     private String provider; 
 
     @Builder.Default

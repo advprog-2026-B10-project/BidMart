@@ -15,4 +15,9 @@ public class UpdateProfileRequest {
             message = "Phone number must contain 8 to 15 digits and may start with +"
     )
     private String phoneNumber;
+
+    private String avatarUrl;
+
+    @Size(max = 500, message = "Shipping address must not exceed 500 characters")
+    private String shippingAddress;
 }
