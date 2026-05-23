@@ -7,7 +7,7 @@ export const options = {
 };
 
 const BASE_URL = 'http://localhost:8080';
-const TOKEN = "eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqb2huYnV5ZXJAZ21haWwuY29tIiwicm9sZXMiOlsiUk9MRV9CVVlFUiJdLCJqdGkiOiJjMzg5Y2E4OC03MGFlLTQxNWQtODkxOS0xMTZhYmY1NWMxZWIiLCJpYXQiOjE3Nzk0NDAzMTIsImV4cCI6MTc3OTQ0MTIxMn0.USBbUP2N6eiyllUJg70eWtreCrqbmYquiYoQJ1-NcksGtBsvaoUiWl9WjwXb9y3n"
+const TOKEN = "eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqb2huYnV5ZXJAZ21haWwuY29tIiwicm9sZXMiOlsiUk9MRV9CVVlFUiJdLCJqdGkiOiI5YzcwNzBmZi02MjJlLTRhOWUtYTgyNy0zYTlmNjE2ZGUwNmEiLCJpYXQiOjE3Nzk1MzY1NTgsImV4cCI6MTc3OTUzNzQ1OH0.yJ4yLOqm6-N4IXg8zIph_9tzJCqJkous5-brivvVH58yrGyB-lIteR5aKVCEfLJ9"
 
 export default function () {
     const amount = Math.floor(Math.random() * 100000) + 60000; // random 60000-160000
