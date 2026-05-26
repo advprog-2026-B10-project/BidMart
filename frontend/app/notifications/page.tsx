@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { authHeaders } from '@/lib/authUtils';
+import { API_URL } from '@/lib/config';
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = API_URL;
 
 interface NotificationItem {
   id: number;
@@ -21,13 +23,6 @@ interface NotificationItem {
 interface UiStatus {
   type: 'success' | 'error' | '';
   message: string;
-}
-
-function authHeaders(): Record<string, string> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
 }
 
 function formatDate(iso: string): string {

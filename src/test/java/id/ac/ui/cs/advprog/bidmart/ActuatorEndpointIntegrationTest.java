@@ -17,8 +17,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
-@TestPropertySource(locations = "classpath:application-test.properties")
 class ActuatorEndpointIntegrationTest {
 
     @Autowired MockMvc mockMvc;
@@ -39,8 +37,8 @@ class ActuatorEndpointIntegrationTest {
     }
 
     @Test
-    void metricsEndpoint_isNotExposed() throws Exception {
+    void metricsEndpoint_isExposed() throws Exception {
         mockMvc.perform(get("/actuator/metrics"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 }

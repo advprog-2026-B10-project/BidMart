@@ -18,6 +18,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import id.ac.ui.cs.advprog.bidmart.auth.config.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 @EnableWebSecurity
@@ -28,12 +29,15 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final ObjectMapper objectMapper;
 
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(request -> {
                 var config = new org.springframework.web.cors.CorsConfiguration();
-                config.setAllowedOrigins(java.util.List.of("http://localhost:3000"));
+                config.setAllowedOrigins(java.util.List.of(frontendUrl));
                 config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                 config.setAllowedHeaders(java.util.List.of("*"));
                 config.setAllowCredentials(true); 
@@ -50,9 +54,10 @@ public class SecurityConfig {
                 )
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/verify", "/api/auth/refresh", "/api/auth/mfa/verify").permitAll()
-                    .requestMatchers("/wallet/**").permitAll()
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/verify", "/api/auth/refresh", "/api/auth/mfa/verify", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/resend-verification").permitAll()
+                .requestMatchers("/wallet/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/katalog/**", "/api/kategori/**").permitAll()
                 .requestMatchers("/api/auth/profile", "/api/auth/mfa/toggle", "/api/auth/logout").authenticated()
                 .requestMatchers("/api/auth/users", "/api/auth/admin/**").hasRole("ADMIN") 
                 .anyRequest().authenticated()

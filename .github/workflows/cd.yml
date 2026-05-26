@@ -24,7 +24,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build with Gradle
-        run: ./gradlew clean build -x test
+        run: ./gradlew clean build
 
       - name: Copy JAR to EC2
         uses: appleboy/scp-action@v0.1.7
@@ -37,15 +37,36 @@ jobs:
           strip_components: 2
 
       - name: Execute and Run on EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
             cd /home/ubuntu/bidmart
-            pkill -f 'java -jar' || true
+            pkill -f 'java.*\.jar' || true
             rm -f *-plain.jar
-            nohup java -jar *.jar > app.log 2>&1 </dev/null &
+            export APP_FRONTEND_URL=https://bidmart-pi.vercel.app
+            nohup java -Xmx300m -Xms150m -jar $(ls *.jar | head -n 1) > /home/ubuntu/bidmart/app.log 2>&1 &
+            
+            if [ ! -d /home/ubuntu/prometheus ]; then
+              wget https://github.com/prometheus/prometheus/releases/download/v2.45.0/prometheus-2.45.0.linux-amd64.tar.gz
+              tar xvf prometheus-2.45.0.linux-amd64.tar.gz
+              mv prometheus-2.45.0.linux-amd64 /home/ubuntu/prometheus
+              rm prometheus-2.45.0.linux-amd64.tar.gz
+            fi
+            
+            cat << 'PROMETHEUS_EOF' > /home/ubuntu/prometheus/prometheus.yml
+            global:
+              scrape_interval: 15s
+            scrape_configs:
+              - job_name: 'spring-boot'
+                metrics_path: '/actuator/prometheus'
+                static_configs:
+                  - targets: ['localhost:8080']
+            PROMETHEUS_EOF
+            
+            pkill -x prometheus || true
+            nohup /home/ubuntu/prometheus/prometheus --config.file=/home/ubuntu/prometheus/prometheus.yml --web.listen-address=":9090" > /home/ubuntu/prometheus.log 2>&1 &
+            
             sleep 5
-            exit 0
+          EOF

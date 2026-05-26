@@ -26,3 +26,10 @@ export const getCurrentUser = () => {
   const role = localStorage.getItem('role');
   return email ? { email, role } : null;
 };
+
+export const authHeaders = (): Record<string, string> => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+};

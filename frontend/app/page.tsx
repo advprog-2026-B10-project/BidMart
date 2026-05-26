@@ -25,12 +25,30 @@ interface Catalog {
   } | null;
 }
 
+interface Permission {
+  id: number;
+  name: string;
+}
+
+interface RoleGroup {
+  id: number;
+  name: string;
+  permissions: Permission[];
+}
+
 export default function HomePage() {
   const [users, setUsers] = useState<User[]>([]);
   const [catalogs, setCatalogs] = useState<Catalog[]>([]);
   const [roleDrafts, setRoleDrafts] = useState<Record<number, string>>({});
   const [actionMessage, setActionMessage] = useState<string>('');
   const [actionError, setActionError] = useState<string>('');
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [roleGroups, setRoleGroups] = useState<RoleGroup[]>([]);
+  const [newPermName, setNewPermName] = useState('');
+  const [newRgName, setNewRgName] = useState('');
+  const [editingRg, setEditingRg] = useState<{ id: number; name: string; permissionIds: number[] } | null>(null);
+  const [selectedPermIds, setSelectedPermIds] = useState<number[]>([]);
+  const [expandedRg, setExpandedRg] = useState<number | null>(null);
   const router = useRouter();
 
   const currentUser = useSyncExternalStore(
@@ -70,6 +88,20 @@ export default function HomePage() {
     }
   }, []);
 
+  const fetchPermissions = useCallback(async () => {
+    try {
+      const response = await axiosClient.get('/auth/admin/permissions');
+      setPermissions(response.data);
+    } catch { /* ignore */ }
+  }, []);
+
+  const fetchRoleGroups = useCallback(async () => {
+    try {
+      const response = await axiosClient.get('/auth/admin/role-groups');
+      setRoleGroups(response.data);
+    } catch { /* ignore */ }
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -80,9 +112,9 @@ export default function HomePage() {
   useEffect(() => {
     if (userRole === 'ADMIN') {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      void Promise.all([fetchUsers(), fetchCatalogs()]);
+      void Promise.all([fetchUsers(), fetchCatalogs(), fetchPermissions(), fetchRoleGroups()]);
     }
-  }, [userRole, fetchUsers, fetchCatalogs]);
+  }, [userRole, fetchUsers, fetchCatalogs, fetchPermissions, fetchRoleGroups]);
 
   const getRoleBadgeStyle = (role: string) => {
     switch (role?.toUpperCase()) {
@@ -114,6 +146,19 @@ export default function HomePage() {
     }
   };
 
+  const handleDisableUser = async (userId: number) => {
+    setActionError('');
+    setActionMessage('');
+    try {
+      await axiosClient.post(`/auth/admin/users/${userId}/disable`);
+      setActionMessage(`User #${userId} disabled successfully.`);
+      fetchUsers();
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to disable user.';
+      setActionError(message);
+    }
+  };
+
   const handleRoleChange = async (userId: number) => {
     setActionMessage('');
     setActionError('');
@@ -128,6 +173,87 @@ export default function HomePage() {
       console.error('Error updating role:', err);
       setActionError('Failed to update role');
     }
+  };
+
+  const handleCreatePermission = async () => {
+    if (!newPermName.trim()) return;
+    setActionMessage(''); setActionError('');
+    try {
+      await axiosClient.post('/auth/admin/permissions', { name: newPermName.trim() });
+      setNewPermName('');
+      setActionMessage('Permission created.');
+      fetchPermissions();
+    } catch {
+      setActionError('Failed to create permission.');
+    }
+  };
+
+  const handleDeletePermission = async (id: number) => {
+    setActionMessage(''); setActionError('');
+    try {
+      await axiosClient.delete(`/auth/admin/permissions/${id}`);
+      setActionMessage('Permission deleted.');
+      fetchPermissions();
+      fetchRoleGroups();
+    } catch {
+      setActionError('Failed to delete permission.');
+    }
+  };
+
+  const handleCreateRoleGroup = async () => {
+    if (!newRgName.trim()) return;
+    setActionMessage(''); setActionError('');
+    try {
+      await axiosClient.post('/auth/admin/role-groups', { name: newRgName.trim() });
+      setNewRgName('');
+      setActionMessage('Role group created.');
+      fetchRoleGroups();
+    } catch {
+      setActionError('Failed to create role group.');
+    }
+  };
+
+  const handleUpdateRoleGroup = async (id: number) => {
+    if (!editingRg) return;
+    setActionMessage(''); setActionError('');
+    try {
+      await axiosClient.put(`/auth/admin/role-groups/${id}`, {
+        name: editingRg.name,
+        permissionIds: editingRg.permissionIds,
+      });
+      setEditingRg(null);
+      setSelectedPermIds([]);
+      setActionMessage('Role group updated.');
+      fetchRoleGroups();
+    } catch {
+      setActionError('Failed to update role group.');
+    }
+  };
+
+  const handleDeleteRoleGroup = async (id: number) => {
+    setActionMessage(''); setActionError('');
+    try {
+      await axiosClient.delete(`/auth/admin/role-groups/${id}`);
+      setActionMessage('Role group deleted.');
+      fetchRoleGroups();
+    } catch {
+      setActionError('Failed to delete role group.');
+    }
+  };
+
+  const startEditRoleGroup = (rg: RoleGroup) => {
+    setEditingRg({ id: rg.id, name: rg.name, permissionIds: rg.permissions.map(p => p.id) });
+    setSelectedPermIds(rg.permissions.map(p => p.id));
+  };
+
+  const togglePermInEdit = (permId: number) => {
+    setEditingRg(prev => {
+      if (!prev) return prev;
+      const next = prev.permissionIds.includes(permId)
+        ? prev.permissionIds.filter(id => id !== permId)
+        : [...prev.permissionIds, permId];
+      return { ...prev, permissionIds: next };
+    });
   };
 
   return (
@@ -209,6 +335,13 @@ export default function HomePage() {
                             >
                               Revoke Sessions
                             </button>
+                            <button
+                              onClick={() => handleDisableUser(user.id)}
+                              disabled={!user.enabled}
+                              className="px-3 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-md text-xs font-semibold transition"
+                            >
+                              Disable
+                            </button>
                             <div className="flex gap-2">
                               <select
                                 value={roleDrafts[user.id] ?? user.role}
@@ -270,6 +403,156 @@ export default function HomePage() {
                 </table>
               </div>
             </div>
+
+            <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
+              <div className="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+                <h3 className="text-xl font-semibold">Permission Management</h3>
+                <span className="text-xs text-gray-500 italic">{permissions.length} permission(s)</span>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newPermName}
+                    onChange={(e) => setNewPermName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleCreatePermission()}
+                    placeholder="e.g. auction:create"
+                    className="flex-1 bg-gray-900 border border-gray-600 rounded-md px-3 py-2 text-sm"
+                  />
+                  <button
+                    onClick={handleCreatePermission}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-md text-sm font-semibold transition"
+                  >
+                    Add
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {permissions.map((perm) => (
+                    <div key={perm.id} className="flex items-center justify-between bg-gray-900 rounded-md px-3 py-2 border border-gray-700">
+                      <span className="text-xs font-mono text-gray-200">{perm.name}</span>
+                      <button
+                        onClick={() => handleDeletePermission(perm.id)}
+                        className="ml-2 text-red-400 hover:text-red-300 text-xs"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  {permissions.length === 0 && (
+                    <p className="text-gray-500 text-sm col-span-full">No permissions defined.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
+              <div className="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+                <h3 className="text-xl font-semibold">Role Groups</h3>
+                <span className="text-xs text-gray-500 italic">{roleGroups.length} group(s)</span>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newRgName}
+                    onChange={(e) => setNewRgName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleCreateRoleGroup()}
+                    placeholder="New role group name"
+                    className="flex-1 bg-gray-900 border border-gray-600 rounded-md px-3 py-2 text-sm"
+                  />
+                  <button
+                    onClick={handleCreateRoleGroup}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-md text-sm font-semibold transition"
+                  >
+                    Create
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {roleGroups.map((rg) => (
+                    <div key={rg.id} className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
+                      {editingRg?.id === rg.id ? (
+                        <div className="p-4 space-y-3">
+                          <input
+                            type="text"
+                            value={editingRg.name}
+                            onChange={(e) => setEditingRg({ ...editingRg, name: e.target.value })}
+                            className="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-sm"
+                          />
+                          <div className="flex flex-wrap gap-2">
+                            {permissions.map((perm) => (
+                              <label key={perm.id} className="flex items-center gap-1.5 bg-gray-800 rounded-md px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-700">
+                                <input
+                                  type="checkbox"
+                                  checked={editingRg.permissionIds.includes(perm.id)}
+                                  onChange={() => togglePermInEdit(perm.id)}
+                                />
+                                {perm.name}
+                              </label>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleUpdateRoleGroup(rg.id)}
+                              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-xs font-semibold transition"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => { setEditingRg(null); setSelectedPermIds([]); }}
+                              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs font-semibold transition"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="px-4 py-3 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="font-semibold text-sm">{rg.name}</span>
+                            <button
+                              onClick={() => setExpandedRg(expandedRg === rg.id ? null : rg.id)}
+                              className="text-xs text-gray-400 hover:text-gray-200 transition"
+                            >
+                              {expandedRg === rg.id ? '▲ hide' : '▼ show'} permissions ({rg.permissions.length})
+                            </button>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => startEditRoleGroup(rg)}
+                              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-xs font-semibold transition"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRoleGroup(rg.id)}
+                              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded text-xs font-semibold transition"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {expandedRg === rg.id && !(editingRg?.id === rg.id) && (
+                        <div className="px-4 pb-3 flex flex-wrap gap-2">
+                          {rg.permissions.length === 0 && (
+                            <span className="text-xs text-gray-500">No permissions assigned.</span>
+                          )}
+                          {rg.permissions.map((perm) => (
+                            <span key={perm.id} className="text-xs font-mono bg-gray-800 rounded-md px-2 py-1 text-gray-300 border border-gray-700">
+                              {perm.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {roleGroups.length === 0 && (
+                    <p className="text-gray-500 text-sm">No role groups defined.</p>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           /* Buyer/Seller View */
@@ -281,14 +564,18 @@ export default function HomePage() {
                 you have full access to our auction features. Start bidding or list your items today.
               </p>
               <div className="mt-8 flex gap-4">
-                <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition">Browse Auctions</button>
+                <Link href="/katalog">
+                  <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition">Browse Auctions</button>
+                </Link>
                 <Link href="/wallet">
                   <button className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-medium transition shadow-lg hover:shadow-emerald-900/20">
                     My Wallet
                   </button>
                 </Link>
                 {userRole === 'SELLER' && (
-                  <button className="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition">Post New Item</button>
+                  <Link href="/katalog/create">
+                    <button className="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition">Post New Item</button>
+                  </Link>
                 )}
               </div>
             </div>

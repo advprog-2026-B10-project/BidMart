@@ -16,6 +16,8 @@ public class ProfileResponse {
     private String email;
     private String displayName;
     private String phoneNumber;
+    private String avatarUrl;
+    private String shippingAddress;
     private Role role;
     private boolean enabled;
     private boolean mfaEnabled;
@@ -26,6 +28,8 @@ public class ProfileResponse {
                 .email(user.getEmail())
                 .displayName(user.getDisplayName())
                 .phoneNumber(user.getPhoneNumber())
+                .avatarUrl(user.getAvatarUrl())
+                .shippingAddress(user.getShippingAddress())
                 .role(user.getRole())
                 .enabled(user.isEnabled())
                 .mfaEnabled(user.isMfaEnabled())

@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.bidmart.bidding.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,6 +13,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Auction {
 
     @Id
@@ -42,4 +44,8 @@ public class Auction {
 
     @Version
     private Long version;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AuctionType type = AuctionType.ENGLISH;
 }

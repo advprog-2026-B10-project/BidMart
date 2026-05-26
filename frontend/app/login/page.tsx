@@ -4,6 +4,7 @@ import axios from 'axios';
 import axiosClient from '@/lib/axiosClient';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { API_URL_WITH_API } from '@/lib/config';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -23,9 +25,9 @@ export default function LoginPage() {
     setInfo('');
     
     try {
-      const response = await axiosClient.post('/auth/login', { 
-        email, 
-        password 
+      const response = await axios.post('/api/auth/login', {
+        email,
+        password
       });
 
       if (response.data.mfaRequired) {
@@ -47,6 +49,19 @@ export default function LoginPage() {
       setError(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResending(true);
+    try {
+      await axios.post(`${API_URL_WITH_API}/auth/resend-verification`, { email });
+      setInfo('A new verification link has been sent to your email.');
+      setError('');
+    } catch {
+      setInfo('');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -86,6 +101,15 @@ export default function LoginPage() {
         {error && (
           <div className="bg-red-500/10 border border-red-500 text-red-500 text-sm p-3 rounded-lg mb-6">
             {error}
+            {error.includes('verify your email') && (
+              <button
+                onClick={handleResendVerification}
+                disabled={resending}
+                className="block mt-2 text-blue-400 hover:text-blue-300 underline text-xs"
+              >
+                {resending ? 'Sending...' : 'Resend verification email'}
+              </button>
+            )}
           </div>
         )}
 
@@ -124,6 +148,11 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)} 
               required 
             />
+            <div className="mt-1 text-right">
+              <Link href="/forgot-password" className="text-xs text-blue-500 hover:text-blue-400 transition">
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           <button 

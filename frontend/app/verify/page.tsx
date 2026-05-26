@@ -2,6 +2,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
+import { API_URL_WITH_API } from '@/lib/config';
 
 function VerifyContent() {
   const searchParams = useSearchParams();
@@ -10,7 +11,7 @@ function VerifyContent() {
 
   const handleAutoVerify = async (token: string) => {
     try {
-      await axios.get(`http://localhost:8080/api/auth/verify?token=${token}`);
+      await axios.get(`${API_URL_WITH_API}/auth/verify?token=${token}`);
       setStatus('Account verified! Redirecting to login...');
       setTimeout(() => window.location.href = '/login', 3000);
     } catch {
