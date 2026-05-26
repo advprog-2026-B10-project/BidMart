@@ -64,7 +64,7 @@ class OrderControllerIntegrationTest {
         seed(2L, "alice@x", "seller@x", OrderStatus.PENDING);
         seed(3L, "bob@x", "seller@x", OrderStatus.PENDING);
 
-        mockMvc.perform(get("/orders/me"))
+        mockMvc.perform(get("/api/orders/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)));
     }
@@ -73,7 +73,7 @@ class OrderControllerIntegrationTest {
     @WithMockUser(username = "alice@x")
     void getById_rejectsOthersOrder() throws Exception {
         Long id = seed(10L, "bob@x", "seller@x", OrderStatus.PENDING);
-        mockMvc.perform(get("/orders/{id}", id))
+        mockMvc.perform(get("/api/orders/{id}", id))
                 .andExpect(status().is4xxClientError());
     }
 
@@ -81,7 +81,7 @@ class OrderControllerIntegrationTest {
     @WithMockUser(username = "alice@x")
     void getById_returnsMyOrder() throws Exception {
         Long id = seed(10L, "alice@x", "seller@x", OrderStatus.PENDING);
-        mockMvc.perform(get("/orders/{id}", id))
+        mockMvc.perform(get("/api/orders/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.auctionId", is(10)));
     }
@@ -89,7 +89,7 @@ class OrderControllerIntegrationTest {
     @Test
     @WithMockUser(username = "alice@x")
     void getById_missingOrder_returns404() throws Exception {
-        mockMvc.perform(get("/orders/{id}", 99999))
+        mockMvc.perform(get("/api/orders/{id}", 99999))
                 .andExpect(status().isNotFound());
     }
 
@@ -102,7 +102,7 @@ class OrderControllerIntegrationTest {
         seed(2L, "bob@x", "seller@x", OrderStatus.PENDING);
         seed(3L, "alice@x", "other-seller@x", OrderStatus.PENDING);
 
-        mockMvc.perform(get("/orders/sales"))
+        mockMvc.perform(get("/api/orders/sales"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)));
     }
@@ -116,7 +116,7 @@ class OrderControllerIntegrationTest {
         ShippingAddressRequest req = new ShippingAddressRequest();
         req.setAddress("Jl. Mawar No. 1");
 
-        mockMvc.perform(patch("/orders/{id}/shipping-address", id)
+        mockMvc.perform(patch("/api/orders/{id}/shipping-address", id)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -130,7 +130,7 @@ class OrderControllerIntegrationTest {
         ShippingAddressRequest req = new ShippingAddressRequest();
         req.setAddress("Jl. Mawar No. 1");
 
-        mockMvc.perform(patch("/orders/{id}/shipping-address", id)
+        mockMvc.perform(patch("/api/orders/{id}/shipping-address", id)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
@@ -143,7 +143,7 @@ class OrderControllerIntegrationTest {
         ShippingAddressRequest req = new ShippingAddressRequest();
         req.setAddress(" ");
 
-        mockMvc.perform(patch("/orders/{id}/shipping-address", id)
+        mockMvc.perform(patch("/api/orders/{id}/shipping-address", id)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
@@ -156,7 +156,7 @@ class OrderControllerIntegrationTest {
     void confirm_sellerHappyPath() throws Exception {
         Long id = seed(1L, "alice@x", "seller@x", OrderStatus.PENDING);
 
-        mockMvc.perform(patch("/orders/{id}/confirm", id))
+        mockMvc.perform(patch("/api/orders/{id}/confirm", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("CONFIRMED")));
     }
@@ -166,7 +166,7 @@ class OrderControllerIntegrationTest {
     void confirm_rejectsNonSeller() throws Exception {
         Long id = seed(1L, "alice@x", "seller@x", OrderStatus.PENDING);
 
-        mockMvc.perform(patch("/orders/{id}/confirm", id))
+        mockMvc.perform(patch("/api/orders/{id}/confirm", id))
                 .andExpect(status().isForbidden());
     }
 
@@ -175,7 +175,7 @@ class OrderControllerIntegrationTest {
     void confirm_alreadyConfirmed_returns409() throws Exception {
         Long id = seed(1L, "alice@x", "seller@x", OrderStatus.CONFIRMED);
 
-        mockMvc.perform(patch("/orders/{id}/confirm", id))
+        mockMvc.perform(patch("/api/orders/{id}/confirm", id))
                 .andExpect(status().isConflict());
     }
 
@@ -188,7 +188,7 @@ class OrderControllerIntegrationTest {
         ShipOrderRequest req = new ShipOrderRequest();
         req.setTrackingNumber("JNE12345");
 
-        mockMvc.perform(patch("/orders/{id}/ship", id)
+        mockMvc.perform(patch("/api/orders/{id}/ship", id)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -203,7 +203,7 @@ class OrderControllerIntegrationTest {
         ShipOrderRequest req = new ShipOrderRequest();
         req.setTrackingNumber("JNE12345");
 
-        mockMvc.perform(patch("/orders/{id}/ship", id)
+        mockMvc.perform(patch("/api/orders/{id}/ship", id)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
@@ -216,7 +216,7 @@ class OrderControllerIntegrationTest {
         ShipOrderRequest req = new ShipOrderRequest();
         req.setTrackingNumber("JNE12345");
 
-        mockMvc.perform(patch("/orders/{id}/ship", id)
+        mockMvc.perform(patch("/api/orders/{id}/ship", id)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isConflict());
@@ -229,7 +229,7 @@ class OrderControllerIntegrationTest {
     void receive_buyerHappyPath() throws Exception {
         Long id = seedWithAddress(1L, "alice@x", "seller@x", OrderStatus.SHIPPED, "Jl. Mawar No. 1");
 
-        mockMvc.perform(patch("/orders/{id}/receive", id))
+        mockMvc.perform(patch("/api/orders/{id}/receive", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("DELIVERED")));
     }
@@ -239,7 +239,7 @@ class OrderControllerIntegrationTest {
     void receive_rejectsNonBuyer() throws Exception {
         Long id = seedWithAddress(1L, "alice@x", "seller@x", OrderStatus.SHIPPED, "Jl. Mawar No. 1");
 
-        mockMvc.perform(patch("/orders/{id}/receive", id))
+        mockMvc.perform(patch("/api/orders/{id}/receive", id))
                 .andExpect(status().isForbidden());
     }
 
@@ -252,7 +252,7 @@ class OrderControllerIntegrationTest {
         DisputeRequest req = new DisputeRequest();
         req.setReason("Barang rusak saat tiba");
 
-        mockMvc.perform(patch("/orders/{id}/dispute", id)
+        mockMvc.perform(patch("/api/orders/{id}/dispute", id)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -267,7 +267,7 @@ class OrderControllerIntegrationTest {
         DisputeRequest req = new DisputeRequest();
         req.setReason("Barang rusak");
 
-        mockMvc.perform(patch("/orders/{id}/dispute", id)
+        mockMvc.perform(patch("/api/orders/{id}/dispute", id)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isConflict());
@@ -280,7 +280,7 @@ class OrderControllerIntegrationTest {
         DisputeRequest req = new DisputeRequest();
         req.setReason("   ");
 
-        mockMvc.perform(patch("/orders/{id}/dispute", id)
+        mockMvc.perform(patch("/api/orders/{id}/dispute", id)
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
@@ -293,7 +293,7 @@ class OrderControllerIntegrationTest {
     void adminRefund_happyPath() throws Exception {
         Long id = seedWithAddress(1L, "alice@x", "seller@x", OrderStatus.DISPUTED, "Jl. Mawar No. 1");
 
-        mockMvc.perform(patch("/orders/{id}/admin/refund", id))
+        mockMvc.perform(patch("/api/orders/{id}/admin/refund", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("REFUNDED")))
                 .andExpect(jsonPath("$.refundedAt", notNullValue()));
@@ -304,7 +304,7 @@ class OrderControllerIntegrationTest {
     void adminRefund_rejectsNonAdmin() throws Exception {
         Long id = seedWithAddress(1L, "alice@x", "seller@x", OrderStatus.DISPUTED, "Jl. Mawar No. 1");
 
-        mockMvc.perform(patch("/orders/{id}/admin/refund", id))
+        mockMvc.perform(patch("/api/orders/{id}/admin/refund", id))
                 .andExpect(status().isForbidden());
     }
 
@@ -313,7 +313,7 @@ class OrderControllerIntegrationTest {
     void adminRefund_fromShipped_returns409() throws Exception {
         Long id = seedWithAddress(1L, "alice@x", "seller@x", OrderStatus.SHIPPED, "Jl. Mawar No. 1");
 
-        mockMvc.perform(patch("/orders/{id}/admin/refund", id))
+        mockMvc.perform(patch("/api/orders/{id}/admin/refund", id))
                 .andExpect(status().isConflict());
     }
 
@@ -324,7 +324,7 @@ class OrderControllerIntegrationTest {
     void adminRelease_happyPath() throws Exception {
         Long id = seedWithAddress(1L, "alice@x", "seller@x", OrderStatus.DISPUTED, "Jl. Mawar No. 1");
 
-        mockMvc.perform(patch("/orders/{id}/admin/release", id))
+        mockMvc.perform(patch("/api/orders/{id}/admin/release", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("DELIVERED")))
                 .andExpect(jsonPath("$.deliveredAt", notNullValue()));
@@ -335,7 +335,7 @@ class OrderControllerIntegrationTest {
     void adminRelease_rejectsNonAdmin() throws Exception {
         Long id = seedWithAddress(1L, "alice@x", "seller@x", OrderStatus.DISPUTED, "Jl. Mawar No. 1");
 
-        mockMvc.perform(patch("/orders/{id}/admin/release", id))
+        mockMvc.perform(patch("/api/orders/{id}/admin/release", id))
                 .andExpect(status().isForbidden());
     }
 }

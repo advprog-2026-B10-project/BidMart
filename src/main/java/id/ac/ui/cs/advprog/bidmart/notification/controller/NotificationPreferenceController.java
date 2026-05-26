@@ -10,7 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/notifications/preferences")
+@RequestMapping("/api/notifications/preferences")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000")
 public class NotificationPreferenceController {

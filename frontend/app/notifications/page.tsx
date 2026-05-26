@@ -57,8 +57,8 @@ export default function NotificationsPage() {
     setStatus({ type: '', message: '' });
     try {
       const [listRes, countRes] = await Promise.all([
-        fetch(`${API_BASE}/notifications/me`, { headers: authHeaders() }),
-        fetch(`${API_BASE}/notifications/me/unread-count`, { headers: authHeaders() }),
+        fetch(`${API_BASE}/api/notifications/me`, { headers: authHeaders() }),
+        fetch(`${API_BASE}/api/notifications/me/unread-count`, { headers: authHeaders() }),
       ]);
       if (!listRes.ok) throw new Error('Failed to load notifications');
       if (!countRes.ok) throw new Error('Failed to load unread count');
@@ -76,7 +76,7 @@ export default function NotificationsPage() {
 
   const handleMarkRead = async (id: number) => {
     try {
-      const res = await fetch(`${API_BASE}/notifications/${id}/read`, {
+      const res = await fetch(`${API_BASE}/api/notifications/${id}/read`, {
         method: 'PATCH',
         headers: authHeaders(),
       });

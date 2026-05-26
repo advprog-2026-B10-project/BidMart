@@ -77,7 +77,7 @@ export default function NotificationPreferencesPage() {
     setLoading(true);
     setStatus({ type: '', message: '' });
     try {
-      const res = await fetch(`${API_BASE}/notifications/preferences`, {
+      const res = await fetch(`${API_BASE}/api/notifications/preferences`, {
         headers: authHeaders(),
       });
       if (!res.ok) throw new Error('Gagal memuat preferensi');
@@ -99,7 +99,7 @@ export default function NotificationPreferencesPage() {
     setSaving(true);
     setStatus({ type: '', message: '' });
     try {
-      const res = await fetch(`${API_BASE}/notifications/preferences`, {
+      const res = await fetch(`${API_BASE}/api/notifications/preferences`, {
         method: 'PUT',
         headers: authHeaders(),
         body: JSON.stringify(prefs),
