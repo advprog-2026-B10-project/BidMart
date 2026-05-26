@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
         return [
             {
                 source: '/api/:path*',
-                destination: 'http://13.221.75.220:8080/api/:path*'
+                destination: `${process.env.API_PROXY_TARGET || 'http://localhost:8080'}/api/:path*`
             }
         ]
     }
