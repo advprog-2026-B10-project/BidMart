@@ -52,13 +52,13 @@ export default function HomePage() {
   const router = useRouter();
 
   const currentUser = useSyncExternalStore(
-    () => () => {},
+    () => () => { },
     () => localStorage.getItem('email'),
     () => null
   );
 
   const userRole = useSyncExternalStore(
-    () => () => {},
+    () => () => { },
     () => localStorage.getItem('role'),
     () => null
   );
@@ -262,10 +262,10 @@ export default function HomePage() {
         {/* Header Section */}
         <div className="flex justify-between items-center mb-10">
           <div>
-            <h1 className="text-4xl font-extrabold text-blue-500 tracking-tight">BidMart Dashboard</h1>
+            <h1 className="text-4xl font-extrabold text-blue-500 tracking-tight">BidMart Dashboard Edited</h1>
             <p className="text-gray-400 mt-1">
-              Logged in as: <span className="text-blue-300 font-medium">{currentUser}</span> 
-              <span className="mx-2">|</span> 
+              Logged in as: <span className="text-blue-300 font-medium">{currentUser}</span>
+              <span className="mx-2">|</span>
               Role: <span className="uppercase text-xs font-bold px-2 py-0.5 rounded bg-gray-800 border border-gray-700">{userRole}</span>
             </p>
           </div>
@@ -560,7 +560,7 @@ export default function HomePage() {
             <div className="p-8 bg-gray-800 rounded-2xl border border-gray-700 shadow-xl">
               <h2 className="text-2xl font-bold text-blue-400 mb-4">Welcome back, {currentUser?.split('@')[0]}!</h2>
               <p className="text-gray-400 leading-relaxed">
-                As a <span className="text-white font-semibold underline decoration-blue-500 underline-offset-4">{userRole}</span>, 
+                As a <span className="text-white font-semibold underline decoration-blue-500 underline-offset-4">{userRole}</span>,
                 you have full access to our auction features. Start bidding or list your items today.
               </p>
               <div className="mt-8 flex gap-4">
@@ -579,13 +579,13 @@ export default function HomePage() {
                 )}
               </div>
             </div>
-            
+
             <div className="p-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl border border-gray-700 shadow-xl flex flex-col justify-center items-center text-center">
-               <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-               </div>
-               <h3 className="text-lg font-semibold">User Management Hidden</h3>
-               <p className="text-sm text-gray-500 mt-2">Only administrators can view the global user directory.</p>
+              <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              </div>
+              <h3 className="text-lg font-semibold">User Management Hidden</h3>
+              <p className="text-sm text-gray-500 mt-2">Only administrators can view the global user directory.</p>
             </div>
           </div>
         )}
