@@ -37,7 +37,7 @@ class NotificationPreferenceControllerIntegrationTest {
     @Test
     @WithMockUser(username = "alice@x")
     void getPreferences_whenNone_returnsDefaults() throws Exception {
-        mockMvc.perform(get("/notifications/preferences"))
+        mockMvc.perform(get("/api/notifications/preferences"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.inAppEnabled", is(true)))
                 .andExpect(jsonPath("$.auctionStatusEnabled", is(true)));
@@ -53,7 +53,7 @@ class NotificationPreferenceControllerIntegrationTest {
         req.setTransactionEnabled(false);
         req.setSystemEnabled(true);
 
-        mockMvc.perform(put("/notifications/preferences")
+        mockMvc.perform(put("/api/notifications/preferences")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -61,7 +61,7 @@ class NotificationPreferenceControllerIntegrationTest {
                 .andExpect(jsonPath("$.auctionStatusEnabled", is(false)))
                 .andExpect(jsonPath("$.orderUpdateEnabled", is(true)));
 
-        mockMvc.perform(get("/notifications/preferences"))
+        mockMvc.perform(get("/api/notifications/preferences"))
                 .andExpect(jsonPath("$.inAppEnabled", is(false)));
     }
 }

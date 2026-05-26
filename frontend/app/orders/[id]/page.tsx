@@ -96,7 +96,7 @@ export default function OrderDetailPage() {
     setLoading(true);
     setStatus({ type: '', message: '' });
     try {
-      const res = await fetch(`${API_BASE}/orders/${id}`, { headers: authHeaders() });
+      const res = await fetch(`${API_BASE}/api/orders/${id}`, { headers: authHeaders() });
       if (!res.ok) throw new Error('Gagal memuat pesanan');
       const data = (await res.json()) as OrderDetail;
       setOrder(data);
@@ -112,7 +112,7 @@ export default function OrderDetailPage() {
     setBusy(true);
     setStatus({ type: '', message: '' });
     try {
-      const res = await fetch(`${API_BASE}/orders/${id}${path}`, {
+      const res = await fetch(`${API_BASE}/api/orders/${id}${path}`, {
         method: 'PATCH',
         headers: authHeaders(),
         body: body ? JSON.stringify(body) : undefined,

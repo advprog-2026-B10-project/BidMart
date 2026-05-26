@@ -75,7 +75,7 @@ export default function OrderSalesPage() {
     setLoading(true);
     setStatus({ type: '', message: '' });
     try {
-      const res = await fetch(`${API_BASE}/orders/sales`, { headers: authHeaders() });
+      const res = await fetch(`${API_BASE}/api/orders/sales`, { headers: authHeaders() });
       if (!res.ok) throw new Error('Gagal memuat penjualan');
       const data = (await res.json()) as OrderItem[];
       setOrders(data);

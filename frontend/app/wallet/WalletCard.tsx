@@ -23,7 +23,7 @@ export default function WalletCard({ role = 'buyer', userId }: WalletCardProps) 
         if (!userId) return;
         setLoadingBalance(true);
         try {
-            const res = await fetch(`${API_URL}/wallet/balance?userId=${userId}`);
+            const res = await fetch(`${API_URL}/api/wallet/balance?userId=${userId}`);
             if (res.ok) {
                 const data = await res.json();
                 setBalanceInfo(data);
@@ -44,7 +44,7 @@ export default function WalletCard({ role = 'buyer', userId }: WalletCardProps) 
         const idempotencyKey = crypto.randomUUID();
         try {
             const res = await fetch(
-                `${API_URL}/wallet/${type}?userId=${userId}&amount=${amount}`,
+                `${API_URL}/api/wallet/${type}?userId=${userId}&amount=${amount}`,
                 {
                     method: 'POST',
                     headers: { 'X-Idempotency-Key': idempotencyKey }
@@ -65,7 +65,7 @@ export default function WalletCard({ role = 'buyer', userId }: WalletCardProps) 
 
     const handleWinAuction = async () => {
         try {
-            const res = await fetch(`${API_URL}/wallet/test-event?userId=${userId}`, {
+            const res = await fetch(`${API_URL}/api/wallet/test-event?userId=${userId}`, {
                 method: 'POST'
             });
             if (res.ok) {
@@ -79,7 +79,7 @@ export default function WalletCard({ role = 'buyer', userId }: WalletCardProps) 
 
     const handlePublishEvent = async () => {
         try {
-            const res = await fetch(`${API_URL}/wallet/test-event?userId=${userId}`, {
+            const res = await fetch(`${API_URL}/api/wallet/test-event?userId=${userId}`, {
                 method: 'POST'
             });
             if (res.ok) {

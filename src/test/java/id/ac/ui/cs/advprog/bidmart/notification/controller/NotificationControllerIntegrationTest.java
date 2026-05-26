@@ -49,7 +49,7 @@ class NotificationControllerIntegrationTest {
         seed("alice@x", true);
         seed("bob@x", false);
 
-        mockMvc.perform(get("/notifications/me"))
+        mockMvc.perform(get("/api/notifications/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)));
     }
@@ -61,7 +61,7 @@ class NotificationControllerIntegrationTest {
         seed("alice@x", false);
         seed("alice@x", true);
 
-        mockMvc.perform(get("/notifications/me/unread-count"))
+        mockMvc.perform(get("/api/notifications/me/unread-count"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.count", is(2)));
     }
@@ -71,7 +71,7 @@ class NotificationControllerIntegrationTest {
     void markRead_flipsIsRead() throws Exception {
         Long id = seed("alice@x", false);
 
-        mockMvc.perform(patch("/notifications/{id}/read", id))
+        mockMvc.perform(patch("/api/notifications/{id}/read", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isRead", is(true)));
     }
@@ -81,7 +81,7 @@ class NotificationControllerIntegrationTest {
     void markRead_cannotAffectAnotherUsersNotification() throws Exception {
         Long id = seed("bob@x", false);
 
-        mockMvc.perform(patch("/notifications/{id}/read", id))
+        mockMvc.perform(patch("/api/notifications/{id}/read", id))
                 .andExpect(status().is4xxClientError());
     }
 }

@@ -18,7 +18,7 @@ export default function AdminTransactionList() {
 
     const fetchTransactions = async () => {
         try {
-            const res = await fetch(`${API_URL}/wallet/admin/transactions`);
+            const res = await fetch(`${API_URL}/api/wallet/admin/transactions`);
             if (res.ok) {
                 const data = await res.json();
                 setTransactions(data);
