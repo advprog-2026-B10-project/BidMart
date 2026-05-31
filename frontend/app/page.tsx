@@ -262,7 +262,7 @@ export default function HomePage() {
         {/* Header Section */}
         <div className="flex justify-between items-center mb-10">
           <div>
-            <h1 className="text-4xl font-extrabold text-blue-500 tracking-tight">BidMart Dashboard Edited</h1>
+            <h1 className="text-4xl font-extrabold text-blue-500 tracking-tight">BidMart Dashboard</h1>
             <p className="text-gray-400 mt-1">
               Logged in as: <span className="text-blue-300 font-medium">{currentUser}</span>
               <span className="mx-2">|</span>

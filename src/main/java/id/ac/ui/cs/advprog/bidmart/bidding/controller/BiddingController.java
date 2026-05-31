@@ -46,4 +46,16 @@ public class BiddingController {
         return ResponseEntity.ok(auctionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Auction tidak ditemukan")));
     }
+
+    @PutMapping("/auctions/{id}/activate")
+    public ResponseEntity<Auction> activateAuction(@PathVariable Long id) {
+        Auction activatedAuction = biddingService.activateAuction(id);
+        return ResponseEntity.ok(activatedAuction);
+    }
+
+    @DeleteMapping("/auctions/{id}")
+    public ResponseEntity<String> deleteAuction(@PathVariable Long id) {
+        biddingService.deleteAuction(id);
+        return ResponseEntity.ok("Auction berhasil dihapus dari sistem.");
+    }
 }

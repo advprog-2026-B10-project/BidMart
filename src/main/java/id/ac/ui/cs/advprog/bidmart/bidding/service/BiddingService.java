@@ -9,6 +9,7 @@ import id.ac.ui.cs.advprog.bidmart.bidding.strategy.AuctionStrategy;
 import id.ac.ui.cs.advprog.bidmart.bidding.strategy.AuctionStrategyFactory;
 import jakarta.persistence.OptimisticLockException;
 
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -68,6 +69,7 @@ public class BiddingService {
         return strategy.determineWinner(auction);
     }
 
+    @Transactional
     @Scheduled(fixedRate = 60000)
     public void closeExpiredAuctions() {
         List<Auction> activeAuctions = auctionRepository.findByStatusIn(List.of(AuctionStatus.ACTIVE, AuctionStatus.EXTENDED));
@@ -78,5 +80,28 @@ public class BiddingService {
                 determineWinner(auction);
             }
         }
+    }
+
+    public Auction activateAuction(Long id) {
+        Auction auction = auctionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Auction tidak ditemukan"));
+
+        if (auction.getStatus() != AuctionStatus.DRAFT) {
+            throw new RuntimeException("Hanya auction berstatus DRAFT yang bisa di-publish");
+        }
+
+        auction.setStatus(AuctionStatus.ACTIVE);
+        return auctionRepository.save(auction);
+    }
+
+    public void deleteAuction(Long id) {
+        Auction auction = auctionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Auction tidak ditemukan"));
+
+        if (auction.getStatus() != AuctionStatus.DRAFT) {
+            throw new RuntimeException("Hanya auction berstatus DRAFT yang bisa dihapus!");
+        }
+
+        auctionRepository.delete(auction);
     }
 }

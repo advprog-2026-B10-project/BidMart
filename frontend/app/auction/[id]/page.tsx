@@ -123,8 +123,8 @@ export default function AuctionDetailPage() {
         <main className="min-h-screen bg-[#0f172a] text-white p-8">
             <div className="max-w-4xl mx-auto">
                 <div className="mb-8">
-                    <Link href="/auction" className="text-gray-400 hover:text-white transition text-sm">
-                        ← Back to Auctions
+                    <Link href={`/katalog/${auction.listingId}`} className="text-gray-400 hover:text-white transition text-sm">
+                        ← Back to Katalog
                     </Link>
                 </div>
 
